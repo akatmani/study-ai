@@ -26,7 +26,10 @@ import {
   Share,
   Star,
   Edit,
-  Trash2
+  Trash2,
+  CheckCircle,
+  XCircle,
+  Copy
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import NotesEditor from '../NotesEditor';
@@ -74,6 +77,20 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
   const [showHint, setShowHint] = useState(false);
   const [showExplanation, setShowExplanation] = useState(false);
   
+     // Quiz practice state
+   const [isPracticingQuiz, setIsPracticingQuiz] = useState(false);
+   const [currentQuizIndex, setCurrentQuizIndex] = useState(0);
+   const [showQuizAnswer, setShowQuizAnswer] = useState(false);
+   const [showQuizHint, setShowQuizHint] = useState(false);
+   const [showQuizExplanation, setShowQuizExplanation] = useState(false);
+   const [selectedAnswer, setSelectedAnswer] = useState<string>('');
+   const [writtenAnswer, setWrittenAnswer] = useState<string>('');
+   const [clickedIDontKnow, setClickedIDontKnow] = useState(false);
+   
+   // Summary and Study Guide state
+   const [selectedSummary, setSelectedSummary] = useState<string | null>(null);
+   const [selectedStudyGuide, setSelectedStudyGuide] = useState<string | null>(null);
+  
   // Sample flashcards data
   const flashcards = [
     {
@@ -85,6 +102,86 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
       answer: "Metabolism is the set of life-sustaining chemical reactions in organisms. The three main purposes are: 1) Converting food to energy, 2) Converting food to building blocks for proteins, lipids, nucleic acids, and some carbohydrates, 3) Eliminating metabolic wastes."
     }
   ];
+  
+     // Sample quiz data - Separate quizzes by type
+   const multipleChoiceQuiz = [
+     {
+       id: 1,
+       type: 'multiple-choice',
+       question: "What is the primary function of mitochondria in cells?",
+       options: {
+         a: "Protein synthesis",
+         b: "Energy production through cellular respiration",
+         c: "DNA replication",
+         d: "Waste removal"
+       },
+       correctAnswer: "b",
+       answer: "Mitochondria are the powerhouse of the cell, producing energy through cellular respiration.",
+       hint: "Think about what cells need most to function.",
+       explanation: "Mitochondria contain enzymes that break down glucose and other molecules to produce ATP, the cell's energy currency."
+     },
+     {
+       id: 2,
+       type: 'multiple-choice',
+       question: "Which of the following is NOT a function of the cell membrane?",
+       options: {
+         a: "Protecting the cell contents",
+         b: "Controlling what enters and exits the cell",
+         c: "Producing energy for the cell",
+         d: "Maintaining cell shape"
+       },
+       correctAnswer: "c",
+       answer: "The cell membrane does not produce energy; it regulates transport and provides protection.",
+       hint: "Consider what the membrane is made of and its structure.",
+       explanation: "The cell membrane is primarily composed of phospholipids and proteins that control transport and provide structure, but energy production occurs in organelles like mitochondria."
+     },
+     {
+       id: 3,
+       type: 'multiple-choice',
+       question: "What is the main function of chloroplasts in plant cells?",
+       options: {
+         a: "Cellular respiration",
+         b: "Photosynthesis",
+         c: "Protein synthesis",
+         d: "Waste removal"
+       },
+       correctAnswer: "b",
+       answer: "Chloroplasts are responsible for photosynthesis, converting light energy into chemical energy.",
+       hint: "Think about what makes plants green and how they make their own food.",
+       explanation: "Chloroplasts contain chlorophyll, which captures light energy and uses it to convert CO2 and H2O into glucose and oxygen through photosynthesis."
+     }
+   ];
+
+   const writtenQuiz = [
+     {
+       id: 1,
+       type: 'written',
+       question: "Explain the process of photosynthesis in 2-3 sentences.",
+       answer: "Photosynthesis is the process by which plants convert sunlight, carbon dioxide, and water into glucose and oxygen. This process occurs in the chloroplasts and is essential for plant growth and providing oxygen for other organisms.",
+       hint: "Focus on the inputs (what goes in) and outputs (what comes out).",
+       explanation: "Photosynthesis involves light-dependent and light-independent reactions, with chlorophyll capturing light energy to drive the conversion of CO2 and H2O into glucose."
+     },
+     {
+       id: 2,
+       type: 'written',
+       question: "Describe the structure and function of the cell membrane in detail.",
+       answer: "The cell membrane is a phospholipid bilayer that surrounds the cell and regulates what enters and exits. It contains embedded proteins that help with transport and communication, and provides structural support while maintaining cell shape.",
+       hint: "Think about the membrane's composition and its role as a barrier.",
+       explanation: "The phospholipid bilayer creates a semi-permeable barrier, while membrane proteins facilitate selective transport of molecules and ions across the membrane."
+     },
+     {
+       id: 3,
+       type: 'written',
+       question: "What is the difference between prokaryotic and eukaryotic cells?",
+       answer: "Prokaryotic cells lack a nucleus and membrane-bound organelles, while eukaryotic cells have both. Prokaryotes are typically smaller and simpler, while eukaryotes are larger and more complex with specialized organelles.",
+       hint: "Compare the internal structure and complexity of these cell types.",
+       explanation: "Prokaryotes represent the earliest form of life and are found in bacteria and archaea, while eukaryotes evolved later and include all plants, animals, fungi, and protists."
+     }
+   ];
+
+   // Current quiz being practiced
+   const [currentQuizType, setCurrentQuizType] = useState<'multiple-choice' | 'written' | null>(null);
+   const [quizQuestions, setQuizQuestions] = useState<any[]>([]);
 
   const sidebarItems = [
     { id: 'sources', icon: Layers, label: 'Sources' },
@@ -142,9 +239,10 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
 
   const toolTabs = [
     { id: 'ai-chat', label: 'Chat', icon: MessageSquare },
-    { id: 'flashcards', label: 'Flashcards', icon: Layers },
-    { id: 'quizzes', label: 'Quizzes', icon: HelpCircle },
     { id: 'summary', label: 'Summary', icon: BookOpen },
+    { id: 'study-guide', label: 'Study Guide', icon: Brain },
+    { id: 'flashcards', label: 'Flashcards', icon: CreditCard },
+    { id: 'quizzes', label: 'Quizzes', icon: HelpCircle },
     { id: 'notes', label: 'Notes', icon: FileText }
   ];
 
@@ -200,6 +298,71 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
     // For now, we just move to the next card
     console.log(`Card rated as: ${rating}`);
   };
+  
+  // Handle quiz navigation and answers
+  const handleQuizAnswer = () => {
+    if (hasAnswered()) {
+      // User submitted an answer
+      setClickedIDontKnow(false);
+    } else {
+      // User clicked "I Don't Know"
+      setClickedIDontKnow(true);
+    }
+    setShowQuizAnswer(true);
+  };
+  
+     const handleQuizNext = () => {
+     if (currentQuizIndex < quizQuestions.length - 1) {
+       setCurrentQuizIndex(currentQuizIndex + 1);
+       setShowQuizAnswer(false);
+       setSelectedAnswer('');
+       setWrittenAnswer('');
+       setShowQuizHint(false);
+       setShowQuizExplanation(false);
+       setClickedIDontKnow(false);
+     } else {
+       // Finished all questions, go back to quiz list
+       setIsPracticingQuiz(false);
+       setCurrentQuizIndex(0);
+       setShowQuizAnswer(false);
+       setSelectedAnswer('');
+       setWrittenAnswer('');
+       setClickedIDontKnow(false);
+       setCurrentQuizType(null);
+       setQuizQuestions([]);
+     }
+   };
+  
+  const handleQuizBack = () => {
+    if (currentQuizIndex > 0) {
+      setCurrentQuizIndex(currentQuizIndex - 1);
+      setShowQuizAnswer(false);
+      setSelectedAnswer('');
+      setWrittenAnswer('');
+      setShowQuizHint(false);
+      setShowQuizExplanation(false);
+      setClickedIDontKnow(false);
+    }
+  };
+  
+  const handleAnswerSelect = (answer: string) => {
+    setSelectedAnswer(answer);
+  };
+  
+  const handleWrittenAnswerChange = (answer: string) => {
+    setWrittenAnswer(answer);
+  };
+  
+     const hasAnswered = () => {
+     const currentQuestion = quizQuestions[currentQuizIndex];
+     if (!currentQuestion) return false;
+     
+     if (currentQuestion.type === 'multiple-choice') {
+       return selectedAnswer !== '';
+     } else {
+       return writtenAnswer.trim() !== '';
+     }
+   };
 
   return (
     <div className="flex-1 bg-white transition-all duration-300 relative">
@@ -223,12 +386,12 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
           <div className="w-1/4 flex flex-col border-r border-neutral-200">
             {/* Document Header */}
             <div className="px-4 pt-4 pb-4">
-              <h1 className="text-base font-normal text-neutral-900 mb-4" style={{ fontSize: '16px', fontWeight: 400 }}>
+              <h1 className="text-base font-normal text-neutral-900 mb-4" style={{ fontSize: '18px', fontWeight: 400 }}>
                 {studySetName}
               </h1>
 
-              {/* Tool Tabs - New Design */}
-              <div className="w-full">
+              {/* Tool Tabs - Compact Design for Preview Mode */}
+              <div className="w-full flex justify-center mb-4">
                 <div className="bg-neutral-100 rounded-full p-1 flex items-center gap-1">
                   {toolTabs.map((tab) => {
                     const Icon = tab.icon;
@@ -237,14 +400,14 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                         key={tab.id}
                         onClick={() => setActiveToolTab(tab.id)}
                         className={cn(
-                          "flex items-center gap-1 px-2 py-1 text-xs font-medium transition-all duration-200 rounded-full",
+                          "flex items-center justify-center w-10 h-10 text-xs font-medium transition-all duration-200 rounded-full",
                           activeToolTab === tab.id
                             ? "bg-white text-neutral-900 shadow-sm"
                             : "text-neutral-600 hover:text-neutral-900 hover:bg-white/50"
                         )}
+                        title={tab.label}
                       >
-                        <Icon className="w-3 h-3" />
-                        {tab.label}
+                        <Icon className="w-5 h-5" />
                       </button>
                     );
                   })}
@@ -304,12 +467,8 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                       
                       {/* Bottom Row - Controls */}
                       <div className="flex items-center justify-between">
-                        {/* Left Side - AI Model Selector and Add Context */}
+                        {/* Left Side - Add Context */}
                         <div className="flex items-center gap-2">
-                          <button className="px-2 py-1 text-xs text-neutral-700 border border-neutral-200 rounded-full hover:bg-neutral-50 transition-colors flex items-center gap-1">
-                            <span>Gemini 2.5 Flash</span>
-                            <ChevronDown className="w-3 h-3 text-neutral-500" />
-                          </button>
                           <button className="px-2 py-1 text-xs text-neutral-700 border border-neutral-200 rounded-full hover:bg-neutral-50 transition-colors">
                             @ Add Context
                           </button>
@@ -342,10 +501,16 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                 <div className="flex-1 flex flex-col">
                   {/* My Decks Section */}
                   <div className="mb-8">
-                    <h2 className="text-xl font-semibold text-neutral-900 mb-4">My Decks</h2>
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-base font-semibold text-neutral-900">My Decks</h2>
+                      <button className="px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        Generate Flashcards
+                      </button>
+                    </div>
                     
                     {/* Decks List */}
-                    <div className="space-y-3">
+                    <div className="space-y-4">
                       {/* Sample Deck - Replace with actual data */}
                       <div 
                         className="bg-white border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer group"
@@ -353,15 +518,16 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
-                              <CreditCard className="w-5 h-5 text-neutral-600" />
+                            <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <CreditCard className="w-6 h-6 text-neutral-600" />
                             </div>
                             <div>
                               <h3 className="font-medium text-neutral-900">Biology Chapter 5</h3>
-                              <p className="text-sm text-neutral-500">24 cards • Last studied 2 days ago</p>
+                              <p className="text-sm text-neutral-500">24 cards</p>
+                              <p className="text-xs text-neutral-400">2 days ago</p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center gap-2">
                             <button 
                               className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
                               onClick={(e) => {
@@ -391,15 +557,16 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                       >
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
-                              <CreditCard className="w-5 h-5 text-neutral-600" />
+                            <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <CreditCard className="w-6 h-6 text-neutral-600" />
                             </div>
                             <div>
                               <h3 className="font-medium text-neutral-900">Math Formulas</h3>
-                              <p className="text-sm text-neutral-500">18 cards • Last studied 1 week ago</p>
+                              <p className="text-sm text-neutral-500">18 cards</p>
+                              <p className="text-xs text-neutral-400">1 week ago</p>
                             </div>
                           </div>
-                          <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                          <div className="flex items-center gap-2">
                             <button 
                               className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
                               onClick={(e) => {
@@ -423,23 +590,312 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                       </div>
                     </div>
                   </div>
+                </div>
+              )}
 
-                  {/* Generate Flashcards Button */}
-                  <div className="flex justify-center">
-                                              <button className="px-6 py-3 bg-neutral-900 text-white rounded-full hover:bg-neutral-800 transition-colors font-medium">
-                            Generate Flashcards
-                          </button>
+              {activeToolTab === 'summary' && (
+                <div className="flex-1 flex flex-col">
+                  {/* My Summaries Section */}
+                  <div className="mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-base font-semibold text-neutral-900">My Summaries</h2>
+                      <button className="px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        Generate Summary
+                      </button>
+                    </div>
+                    
+                    {/* Summaries List */}
+                    <div className="space-y-4">
+                      {/* Sample Summary */}
+                      <div 
+                        className="bg-white border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer group"
+                        onClick={() => setSelectedSummary('biology-chapter-1')}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <BookOpen className="w-6 h-6 text-neutral-600" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium text-neutral-900">Biology Chapter 1</h3>
+                              <p className="text-sm text-neutral-500">3 pages</p>
+                              <p className="text-xs text-neutral-400">2 days ago</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button 
+                              className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log('Edit summary');
+                              }}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button 
+                              className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log('Delete summary');
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Another Sample Summary */}
+                      <div 
+                        className="bg-white border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer group"
+                        onClick={() => setSelectedSummary('math-calculus')}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <BookOpen className="w-6 h-6 text-neutral-600" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium text-neutral-900">Math Calculus</h3>
+                              <p className="text-sm text-neutral-500">5 pages</p>
+                              <p className="text-xs text-neutral-400">1 week ago</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button 
+                              className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log('Edit summary');
+                              }}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button 
+                              className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log('Delete summary');
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeToolTab === 'study-guide' && (
+                <div className="flex-1 flex flex-col">
+                  {/* My Guides Section */}
+                  <div className="mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-base font-semibold text-neutral-900">My Guides</h2>
+                      <button className="px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        Generate Guide
+                      </button>
+                    </div>
+                    
+                    {/* Guides List */}
+                    <div className="space-y-4">
+                      {/* Sample Guide */}
+                      <div 
+                        className="bg-white border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer group"
+                        onClick={() => setSelectedStudyGuide('biology-guide')}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <Brain className="w-6 h-6 text-neutral-600" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium text-neutral-900">Biology Study Guide</h3>
+                              <p className="text-sm text-neutral-500">5 sections</p>
+                              <p className="text-xs text-neutral-400">3 days ago</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button 
+                              className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log('Edit guide');
+                              }}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button 
+                              className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log('Delete guide');
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Another Sample Guide */}
+                      <div 
+                        className="bg-white border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer group"
+                        onClick={() => setSelectedStudyGuide('math-formulas')}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <Brain className="w-6 h-6 text-neutral-600" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium text-neutral-900">Math Formulas Guide</h3>
+                              <p className="text-sm text-neutral-500">8 sections</p>
+                              <p className="text-xs text-neutral-400">1 week ago</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button 
+                              className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log('Edit guide');
+                              }}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button 
+                              className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log('Delete guide');
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {activeToolTab === 'quizzes' && (
+                <div className="flex-1 flex flex-col">
+                  {/* My Quizzes Section */}
+                  <div className="mb-8">
+                    <div className="flex items-center justify-between mb-4">
+                      <h2 className="text-base font-semibold text-neutral-900">My Quizzes</h2>
+                      <button className="px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
+                        <Plus className="w-4 h-4" />
+                        Generate Quiz
+                      </button>
+                    </div>
+                    
+                    {/* Quizzes List */}
+                    <div className="space-y-4">
+                      {/* Multiple Choice Quiz */}
+                      <div 
+                        className="bg-white border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer group"
+                        onClick={() => {
+                          setCurrentQuizType('multiple-choice');
+                          setQuizQuestions(multipleChoiceQuiz);
+                          setIsPracticingQuiz(true);
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <HelpCircle className="w-6 h-6 text-neutral-600" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium text-neutral-900">Biology Multiple Choice</h3>
+                              <p className="text-sm text-neutral-500">3 questions</p>
+                              <p className="text-xs text-neutral-400">Multiple choice format</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button 
+                              className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log('Edit quiz');
+                              }}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button 
+                              className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log('Delete quiz');
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Written Answer Quiz */}
+                      <div 
+                        className="bg-white border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer group"
+                        onClick={() => {
+                          setCurrentQuizType('written');
+                          setQuizQuestions(writtenQuiz);
+                          setIsPracticingQuiz(true);
+                        }}
+                      >
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-3">
+                            <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                              <HelpCircle className="w-6 h-6 text-neutral-600" />
+                            </div>
+                            <div>
+                              <h3 className="font-medium text-neutral-900">Biology Written Answers</h3>
+                              <p className="text-sm text-neutral-500">3 questions</p>
+                              <p className="text-xs text-neutral-400">Written response format</p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <button 
+                              className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log('Edit quiz');
+                              }}
+                            >
+                              <Edit className="w-4 h-4" />
+                            </button>
+                            <button 
+                              className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                console.log('Delete quiz');
+                              }}
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
 
               {activeToolTab === 'notes' && (
-                <div className="w-full h-full">
+                <div className="flex-1 flex flex-col">
                   <NotesEditor />
                 </div>
               )}
 
-              {!['ai-chat', 'flashcards', 'notes'].includes(activeToolTab) && (
+              {!['ai-chat', 'summary', 'study-guide', 'flashcards', 'quizzes', 'notes'].includes(activeToolTab) && (
                 <div className="flex-1 flex flex-col items-center justify-center text-center">
                   <div className="w-12 h-12 mx-auto mb-4 text-neutral-300">
                     {React.createElement(toolTabs.find(tab => tab.id === activeToolTab)?.icon || FileText, {
@@ -461,19 +917,23 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
             width: isSourcesDrawerOpen ? 'calc(75% - 320px)' : 'calc(75% - 64px)'
           }}>
             {/* Preview Header */}
-            <div className="flex items-center justify-between p-4 border-b border-neutral-200">
-              <h1 className="text-xl font-semibold text-neutral-900 truncate">
-                {previewedSource.name}
-              </h1>
-              
-              {/* Exit Button Only */}
-              <button
-                onClick={exitSourcePreview}
-                className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors"
-                title="Exit preview"
-              >
-                <X className="w-4 h-4 text-neutral-600" />
-              </button>
+            <div className="px-4 pt-4 pb-4">
+              {/* Source Name with Exit Button */}
+              <div className="flex items-center gap-3 mb-4">
+                {/* Exit Button */}
+                <button
+                  onClick={exitSourcePreview}
+                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors"
+                  title="Exit preview"
+                >
+                  <X className="w-4 h-4 text-neutral-600" />
+                </button>
+                
+                {/* Source Name */}
+                <h1 className="text-base font-normal text-neutral-900" style={{ fontSize: '18px', fontWeight: 400 }}>
+                  {previewedSource.name}
+                </h1>
+              </div>
             </div>
 
             {/* Preview Content */}
@@ -498,14 +958,15 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
 
           {/* Sources Drawer - Can be expanded or collapsed in preview mode */}
           <div className={cn(
-            "bg-white border-l border-neutral-200 flex flex-col transition-all duration-300",
+            "bg-white border-l border-neutral-200 transition-all duration-300",
             isSourcesDrawerOpen ? "w-80" : "w-16"
           )}>
             {isSourcesDrawerOpen ? (
               // Expanded Sources Drawer in Preview Mode
               <div className="h-full flex flex-col">
-                <div className="flex items-center justify-between p-4 border-b border-neutral-200">
-                  <h2 className="text-lg font-semibold text-neutral-900">Sources</h2>
+                {/* Header Section */}
+                <div className="flex items-center justify-between p-4">
+                  <h2 className="text-base font-semibold text-neutral-900">My Sources</h2>
                   <button
                     onClick={() => setIsSourcesDrawerOpen(false)}
                     className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors"
@@ -513,26 +974,34 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                     <ChevronRight className="w-4 h-4 text-neutral-600" />
                   </button>
                 </div>
-                <div className="flex-1 p-4 overflow-y-auto">
-                  <div className="space-y-3">
-                    {/* Select All */}
-                    <div className="flex items-center gap-3 p-3 border border-neutral-200 rounded-lg bg-neutral-50">
-                      <input
-                        type="checkbox"
-                        id="select-all-preview"
-                        checked={isAllSourcesSelected}
-                        onChange={toggleSelectAllSources}
-                        className="w-4 h-4 text-neutral-900 bg-neutral-100 border-neutral-300 rounded focus:ring-neutral-500"
-                      />
-                      <label htmlFor="select-all-preview" className="text-sm font-medium text-neutral-900 cursor-pointer">
-                        Select All Sources
+                
+                {/* Add Source Button */}
+                <div className="px-4 mb-4">
+                  <button className="w-full px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center justify-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    Add Source
+                  </button>
+                </div>
+                
+                {/* Sources List */}
+                <div className="flex-1 px-4 overflow-y-auto">
+                  <div className="space-y-4">
+                    {/* Select All Toggle */}
+                    <div className="flex items-center gap-3 mb-4">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          id="select-all-preview"
+                          checked={isAllSourcesSelected}
+                          onChange={toggleSelectAllSources}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-neutral-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-neutral-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-neutral-900"></div>
                       </label>
+                      <span className="text-xs text-neutral-600">Select All Sources</span>
                     </div>
-
-                    <button className="w-full p-3 border-2 border-dashed border-neutral-300 rounded-lg text-neutral-500 hover:border-neutral-400 transition-colors text-sm">
-                      + Add new source
-                    </button>
                     
+                    {/* Source Cards */}
                     {sources.map((source) => {
                       const Icon = getSourceIcon(source.type);
                       const isActive = sourcePreviewMode === source.id;
@@ -541,45 +1010,50 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                           key={source.id}
                           onClick={() => switchPreviewSource(source.id)}
                           className={cn(
-                            "p-3 border border-neutral-200 rounded-lg transition-colors duration-200 cursor-pointer group",
-                            isActive ? "bg-neutral-100 border-neutral-300" : "hover:bg-neutral-50"
+                            "bg-white border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer group",
+                            isActive ? "bg-neutral-100 border-neutral-300" : ""
                           )}
                         >
-                          <div className="flex items-center gap-3">
-                            {/* Source Type Icon */}
-                            <div className="relative w-4 h-4 flex-shrink-0">
-                              <Icon className="w-4 h-4 absolute inset-0 transition-all duration-200 opacity-100 group-hover:opacity-0 text-neutral-600" />
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  // Show source options menu here
-                                }}
-                                className="absolute inset-0 w-4 h-4 flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100"
-                                title="Source options"
-                              >
-                                <MoreHorizontal className="w-4 h-4 text-neutral-500" />
-                              </button>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              {/* Source Type Icon - Replaced by Options Menu on Hover */}
+                              <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0 relative">
+                                <Icon className="w-5 h-5 text-neutral-600 transition-opacity duration-200 group-hover:opacity-0" />
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Show source options menu here
+                                  }}
+                                  className="absolute inset-0 w-full h-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                  title="Source options"
+                                >
+                                  <MoreHorizontal className="w-5 h-5 text-neutral-600" />
+                                </button>
+                              </div>
+                              <div>
+                                <h3 className="font-medium text-neutral-900">{source.name}</h3>
+                                <p className="text-sm text-neutral-500">{source.type}</p>
+                              </div>
                             </div>
-
-                            {/* Source Name */}
-                            <div className="min-w-0 flex-1">
-                              <span className="text-sm font-medium text-neutral-900 truncate block">
-                                {source.name}
-                              </span>
+                            
+                            {/* Action Buttons */}
+                            <div className="flex items-center gap-2">
+                              {/* Toggle Selection */}
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  id={`source-preview-${source.id}`}
+                                  checked={selectedSources.includes(source.id)}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    toggleSourceSelection(source.id);
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-9 h-5 bg-neutral-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-neutral-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-neutral-900"></div>
+                              </label>
                             </div>
-
-                            {/* Checkbox */}
-                            <input
-                              type="checkbox"
-                              id={`source-preview-${source.id}`}
-                              checked={selectedSources.includes(source.id)}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                toggleSourceSelection(source.id);
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                              className="w-4 h-4 text-neutral-900 bg-neutral-100 border-neutral-300 rounded focus:ring-neutral-500"
-                            />
                           </div>
                         </div>
                       );
@@ -592,7 +1066,7 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
               <div className="h-full flex flex-col items-center py-4 gap-3">
                 <button
                   onClick={() => setIsSourcesDrawerOpen(true)}
-                  className="w-12 h-12 flex items-center justify-center rounded-lg hover:bg-neutral-100 transition-colors"
+                  className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors"
                   title="Open sources"
                 >
                   <ChevronLeft className="w-4 h-4 text-neutral-600" />
@@ -607,10 +1081,10 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                       className={cn(
                         "w-12 h-12 flex items-center justify-center rounded-lg transition-colors relative",
                         isActive 
-                          ? "bg-neutral-900 text-white" 
+                          ? "bg-neutral-200 text-neutral-900" 
                           : "hover:bg-neutral-100 text-neutral-600"
                       )}
-                      title={source.name}
+                      title={`${source.name} - Click to preview`}
                     >
                       <Icon className="w-5 h-5" />
                       {isActive && (
@@ -638,7 +1112,7 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
           <div className="flex-1 flex flex-col">
             {/* Document Header */}
             <div className="px-4 pt-4 pb-4">
-              <h1 className="text-base font-normal text-neutral-900 mb-4" style={{ fontSize: '16px', fontWeight: 400 }}>
+              <h1 className="text-base font-normal text-neutral-900 mb-4" style={{ fontSize: '18px', fontWeight: 400 }}>
                 {studySetName}
               </h1>
               
@@ -703,12 +1177,8 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                         
                         {/* Bottom Row - Controls */}
                         <div className="flex items-center justify-between">
-                          {/* Left Side - AI Model Selector and Add Context */}
+                          {/* Left Side - Add Context */}
                           <div className="flex items-center gap-2">
-                            <button className="px-3 py-2 text-sm text-neutral-700 border border-neutral-200 rounded-full hover:bg-neutral-50 transition-colors flex items-center gap-2">
-                              <span>Gemini 2.5 Flash</span>
-                              <ChevronDown className="w-4 h-4 text-neutral-500" />
-                            </button>
                             <button className="px-3 py-2 text-sm text-neutral-700 border border-neutral-200 rounded-full hover:bg-neutral-50 transition-colors">
                               @ Add Context
                             </button>
@@ -745,32 +1215,39 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                   </div>
                 )}
 
-                {activeToolTab === 'flashcards' && (
-                  <div className="flex-1 flex flex-col">
-                    {!isPracticingFlashcards ? (
-                      <>
-                        {/* My Decks Section */}
-                        <div className="mb-8">
-                          <h2 className="text-xl font-semibold text-neutral-900 mb-4">My Decks</h2>
+                                 {activeToolTab === 'flashcards' && (
+                   <div className="flex-1 flex flex-col">
+                     {!isPracticingFlashcards ? (
+                       <>
+                         {/* My Decks Section */}
+                         <div className="mb-8 mt-12">
+                          <div className="flex items-center justify-between mb-4">
+                            <h2 className="text-base font-semibold text-neutral-900">My Decks</h2>
+                            <button className="px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
+                              <Plus className="w-4 h-4" />
+                              Generate Flashcards
+                            </button>
+                          </div>
                           
                           {/* Decks List */}
-                          <div className="space-y-3">
+                          <div className="space-y-4">
                             {/* Sample Deck - Replace with actual data */}
                             <div 
                               className="bg-white border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer group"
                               onClick={() => setIsPracticingFlashcards(true)}
                             >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
-                                    <CreditCard className="w-5 h-5 text-neutral-600" />
+                                                              <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                      <CreditCard className="w-6 h-6 text-neutral-600" />
+                                    </div>
+                                    <div>
+                                      <h3 className="font-medium text-neutral-900">Biology Chapter 5</h3>
+                                      <p className="text-sm text-neutral-500">24 cards</p>
+                                      <p className="text-xs text-neutral-400">2 days ago</p>
+                                    </div>
                                   </div>
-                                  <div>
-                                    <h3 className="font-medium text-neutral-900">Biology Chapter 5</h3>
-                                    <p className="text-sm text-neutral-500">24 cards • Last studied 2 days ago</p>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <div className="flex items-center gap-2">
                                   <button 
                                     className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
                                     onClick={(e) => {
@@ -798,17 +1275,18 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                               className="bg-white border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer group"
                               onClick={() => setIsPracticingFlashcards(true)}
                             >
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3">
-                                  <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
-                                    <CreditCard className="w-5 h-5 text-neutral-600" />
+                                                              <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                      <CreditCard className="w-6 h-6 text-neutral-600" />
+                                    </div>
+                                    <div>
+                                      <h3 className="font-medium text-neutral-900">Math Formulas</h3>
+                                      <p className="text-sm text-neutral-500">18 cards</p>
+                                      <p className="text-xs text-neutral-400">1 week ago</p>
+                                    </div>
                                   </div>
-                                  <div>
-                                    <h3 className="font-medium text-neutral-900">Math Formulas</h3>
-                                    <p className="text-sm text-neutral-500">18 cards • Last studied 1 week ago</p>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                  <div className="flex items-center gap-2">
                                   <button 
                                     className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
                                     onClick={(e) => {
@@ -832,20 +1310,12 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                             </div>
                           </div>
                         </div>
-
-                        {/* Generate Flashcards Button */}
-                        <div className="flex justify-center">
-                          <button className="px-6 py-3 bg-neutral-900 text-white rounded-full hover:bg-neutral-800 transition-colors font-medium flex items-center gap-2">
-                            <Plus className="w-4 h-4" />
-                            Generate Flashcards
-                          </button>
-                        </div>
                       </>
                     ) : (
                       /* Flashcard Practice Interface */
                       <div className="flex-1 flex flex-col">
                                       {/* Top Navigation */}
-              <div className="mb-3">
+              <div className="mb-3 mt-12">
                 {/* Back Button */}
                 <button 
                   onClick={() => setIsPracticingFlashcards(false)}
@@ -993,28 +1463,793 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                   </div>
                 )}
 
-                {activeToolTab === 'notes' && (
-                  <div className="w-full h-full">
-                    <NotesEditor />
-                  </div>
-                )}
-
-                {!['ai-chat', 'flashcards', 'notes'].includes(activeToolTab) && (
-                  <div className="min-h-[calc(100vh-300px)] flex flex-col items-center justify-center text-center">
-                    <div className="w-20 h-20 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-6">
-                      {React.createElement(toolTabs.find(tab => tab.id === activeToolTab)?.icon || FileText, {
-                        className: "w-10 h-10 text-neutral-400"
-                      })}
+                                                   {activeToolTab === 'notes' && (
+                    <div className="w-full h-full">
+                      <NotesEditor />
                     </div>
-                    <h2 className="text-2xl font-semibold text-neutral-900 mb-2">
-                      {toolTabs.find(tab => tab.id === activeToolTab)?.label}
-                    </h2>
-                    <p className="text-neutral-600 mb-8">Coming soon</p>
-                    <button className="px-6 py-3 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors">
-                      Get Notified
-                    </button>
-                  </div>
-                )}
+                  )}
+
+                                      {activeToolTab === 'summary' && (
+                      <div className="flex-1 flex flex-col">
+                        {!selectedSummary ? (
+                          <>
+                            {/* My Summaries Section */}
+                            <div className="mb-8 mt-12">
+                              <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-base font-semibold text-neutral-900">My Summaries</h2>
+                                <button className="px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
+                                  <Plus className="w-4 h-4" />
+                                  Generate Summary
+                                </button>
+                              </div>
+                              
+                                                          {/* Summaries List */}
+                            <div className="space-y-4">
+                                {/* Sample Summary */}
+                                <div 
+                                  className="bg-white border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer group"
+                                  onClick={() => setSelectedSummary('biology-chapter-1')}
+                                >
+                                                                    <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <BookOpen className="w-6 h-6 text-neutral-600" />
+                                      </div>
+                                      <div>
+                                        <h3 className="font-medium text-neutral-900">Biology Chapter 1</h3>
+                                        <p className="text-sm text-neutral-500">3 pages</p>
+                                        <p className="text-xs text-neutral-400">2 days ago</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <button 
+                                        className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          // Handle edit
+                                          console.log('Edit summary');
+                                        }}
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </button>
+                                      <button 
+                                        className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          // Handle delete
+                                          console.log('Delete summary');
+                                        }}
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Another Sample Summary */}
+                                <div 
+                                  className="bg-white border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer group"
+                                  onClick={() => setSelectedSummary('math-calculus')}
+                                >
+                                                                    <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <BookOpen className="w-6 h-6 text-neutral-600" />
+                                      </div>
+                                      <div>
+                                        <h3 className="font-medium text-neutral-900">Math Calculus</h3>
+                                        <p className="text-sm text-neutral-500">5 pages</p>
+                                        <p className="text-xs text-neutral-400">1 week ago</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <button 
+                                        className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          // Handle edit
+                                          console.log('Edit summary');
+                                        }}
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </button>
+                                      <button 
+                                        className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          // Handle delete
+                                          console.log('Delete summary');
+                                        }}
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          /* Summary Content Display */
+                          <div className="flex-1 flex flex-col">
+                            {/* Top Navigation */}
+                            <div className="mb-3 flex items-center justify-between mt-12">
+                              {/* Back Button */}
+                              <button 
+                                onClick={() => setSelectedSummary(null)}
+                                className="text-neutral-600 hover:text-neutral-900 transition-colors flex items-center gap-2"
+                              >
+                                <ChevronLeft className="w-4 h-4" />
+                                Back
+                              </button>
+                              
+                              {/* Copy Button */}
+                              <button 
+                                onClick={() => {
+                                  // Copy the summary content to clipboard
+                                  const content = selectedSummary === 'biology-chapter-1' 
+                                    ? 'Biology Chapter 1: Introduction to Cell Biology...' // Full content would go here
+                                    : 'Calculus: Fundamental Concepts and Applications...';
+                                  navigator.clipboard.writeText(content);
+                                }}
+                                className="px-3 py-1.5 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2"
+                              >
+                                <Copy className="w-4 h-4" />
+                                Copy Summary
+                              </button>
+                            </div>
+
+                            {/* Summary Content */}
+                            <div className="flex-1 bg-white border border-neutral-200 rounded-lg p-8 shadow-sm">
+                              <div className="prose prose-neutral max-w-none">
+                                {selectedSummary === 'biology-chapter-1' ? (
+                                  <>
+                                    <h1 className="text-2xl font-bold text-neutral-900 mb-6">Biology Chapter 1: Introduction to Cell Biology</h1>
+                                    
+                                    <h2 className="text-xl font-semibold text-neutral-800 mb-4">Overview</h2>
+                                    <p className="text-neutral-700 mb-4 leading-relaxed">
+                                      Cell biology is the foundation of modern biology, exploring the fundamental units of life. This chapter introduces the basic principles of cellular structure, function, and organization that govern all living organisms.
+                                    </p>
+                                    
+                                    <h2 className="text-xl font-semibold text-neutral-800 mb-4">Key Concepts</h2>
+                                    <ul className="list-disc pl-6 mb-4 space-y-2">
+                                      <li className="text-neutral-700">Cells are the basic structural and functional units of all living organisms</li>
+                                      <li className="text-neutral-700">All cells arise from pre-existing cells through cell division</li>
+                                      <li className="text-neutral-700">Cells contain genetic material that controls their activities</li>
+                                      <li className="text-neutral-700">Cells respond to their environment and maintain homeostasis</li>
+                                    </ul>
+                                    
+                                    <h2 className="text-xl font-semibold text-neutral-800 mb-4">Cell Theory</h2>
+                                    <p className="text-neutral-700 mb-4 leading-relaxed">
+                                      The cell theory, developed in the 19th century, states that all living things are composed of cells, cells are the basic units of structure and function, and new cells are produced from existing cells.
+                                    </p>
+                                    
+                                    <h2 className="text-xl font-semibold text-neutral-800 mb-4">Conclusion</h2>
+                                    <p className="text-neutral-700 leading-relaxed">
+                                      Understanding cell biology provides the foundation for comprehending more complex biological processes, from organism development to disease mechanisms.
+                                    </p>
+                                  </>
+                                ) : (
+                                  <>
+                                    <h1 className="text-2xl font-bold text-neutral-900 mb-6">Calculus: Fundamental Concepts and Applications</h1>
+                                    
+                                    <h2 className="text-xl font-semibold text-neutral-800 mb-4">Introduction</h2>
+                                    <p className="text-neutral-700 mb-4 leading-relaxed">
+                                      Calculus is a branch of mathematics that deals with continuous change and motion. It provides powerful tools for analyzing and solving problems in physics, engineering, economics, and many other fields.
+                                    </p>
+                                    
+                                    <h2 className="text-xl font-semibold text-neutral-800 mb-4">Core Principles</h2>
+                                    <ul className="list-disc pl-6 mb-4 space-y-2">
+                                      <li className="text-neutral-700">Differential calculus studies rates of change and slopes of curves</li>
+                                      <li className="text-neutral-700">Integral calculus deals with accumulation and areas under curves</li>
+                                      <li className="text-neutral-700">The fundamental theorem connects these two branches</li>
+                                      <li className="text-neutral-700">Limits provide the foundation for all calculus concepts</li>
+                                    </ul>
+                                    
+                                    <h2 className="text-xl font-semibold text-neutral-800 mb-4">Applications</h2>
+                                    <p className="text-neutral-700 mb-4 leading-relaxed">
+                                      Calculus is essential for understanding motion, optimization, growth and decay, and many natural phenomena. It enables precise mathematical modeling of complex real-world systems.
+                                    </p>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                                      {activeToolTab === 'study-guide' && (
+                      <div className="flex-1 flex flex-col">
+                        {!selectedStudyGuide ? (
+                          <>
+                            {/* My Guides Section */}
+                            <div className="mb-8 mt-12">
+                              <div className="flex items-center justify-between mb-4">
+                                <h2 className="text-base font-semibold text-neutral-900">My Guides</h2>
+                                <button className="px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
+                                  <Plus className="w-4 h-4" />
+                                  Generate Guide
+                                </button>
+                              </div>
+                              
+                                                          {/* Guides List */}
+                            <div className="space-y-4">
+                                {/* Sample Guide */}
+                                <div 
+                                  className="bg-white border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer group"
+                                  onClick={() => setSelectedStudyGuide('biology-guide')}
+                                >
+                                                                    <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <Brain className="w-6 h-6 text-neutral-600" />
+                                      </div>
+                                      <div>
+                                        <h3 className="font-medium text-neutral-900">Biology Study Guide</h3>
+                                        <p className="text-sm text-neutral-500">5 sections</p>
+                                        <p className="text-xs text-neutral-400">3 days ago</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <button 
+                                        className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          // Handle edit
+                                          console.log('Edit guide');
+                                        }}
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </button>
+                                      <button 
+                                        className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          // Handle delete
+                                          console.log('Delete guide');
+                                        }}
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Another Sample Guide */}
+                                <div 
+                                  className="bg-white border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer group"
+                                  onClick={() => setSelectedStudyGuide('math-formulas')}
+                                >
+                                                                    <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <Brain className="w-6 h-6 text-neutral-600" />
+                                      </div>
+                                      <div>
+                                        <h3 className="font-medium text-neutral-900">Math Formulas Guide</h3>
+                                        <p className="text-sm text-neutral-500">8 sections</p>
+                                        <p className="text-xs text-neutral-400">1 week ago</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                      <button 
+                                        className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          // Handle edit
+                                          console.log('Edit guide');
+                                        }}
+                                      >
+                                        <Edit className="w-4 h-4" />
+                                      </button>
+                                      <button 
+                                        className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                                        onClick={(e) => {
+                                          e.stopPropagation();
+                                          // Handle delete
+                                          console.log('Delete guide');
+                                        }}
+                                      >
+                                        <Trash2 className="w-4 h-4" />
+                                      </button>
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </>
+                        ) : (
+                          /* Study Guide Content Display */
+                          <div className="flex-1 flex flex-col">
+                            {/* Top Navigation */}
+                            <div className="mb-3 flex items-center justify-between mt-12">
+                              {/* Back Button */}
+                              <button 
+                                onClick={() => setSelectedStudyGuide(null)}
+                                className="text-neutral-600 hover:text-neutral-900 transition-colors flex items-center gap-2"
+                              >
+                                <ChevronLeft className="w-4 h-4" />
+                                Back
+                              </button>
+                              
+                              {/* Copy Button */}
+                              <button 
+                                onClick={() => {
+                                  // Copy the guide content to clipboard
+                                  const content = selectedStudyGuide === 'biology-guide' 
+                                    ? 'Biology Study Guide: Essential Concepts...' // Full content would go here
+                                    : 'Math Formulas: Essential Reference Guide...';
+                                  navigator.clipboard.writeText(content);
+                                }}
+                                className="px-3 py-1.5 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2"
+                              >
+                                <Copy className="w-4 h-4" />
+                                Copy Guide
+                              </button>
+                            </div>
+
+                            {/* Study Guide Content */}
+                            <div className="flex-1 bg-white border border-neutral-200 rounded-lg p-8 shadow-sm">
+                              <div className="prose prose-neutral max-w-none">
+                                {selectedStudyGuide === 'biology-guide' ? (
+                                  <>
+                                    <h1 className="text-2xl font-bold text-neutral-900 mb-6">Biology Study Guide: Essential Concepts</h1>
+                                    
+                                    <h2 className="text-xl font-semibold text-neutral-800 mb-4">📚 Study Tips</h2>
+                                    <ul className="list-disc pl-6 mb-4 space-y-2">
+                                      <li className="text-neutral-700">Focus on understanding concepts rather than memorizing facts</li>
+                                      <li className="text-neutral-700">Create visual diagrams to understand complex processes</li>
+                                      <li className="text-neutral-700">Practice with real-world examples and case studies</li>
+                                      <li className="text-neutral-700">Review regularly to reinforce learning</li>
+                                    </ul>
+                                    
+                                    <h2 className="text-xl font-semibold text-neutral-800 mb-4">🔬 Key Topics to Master</h2>
+                                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                      <div className="bg-neutral-50 p-4 rounded-lg">
+                                        <h3 className="font-semibold text-neutral-800 mb-2">Cell Structure</h3>
+                                        <p className="text-sm text-neutral-600">Organelles, membranes, and cellular organization</p>
+                                      </div>
+                                      <div className="bg-neutral-50 p-4 rounded-lg">
+                                        <h3 className="font-semibold text-neutral-800 mb-2">Genetics</h3>
+                                        <p className="text-sm text-neutral-600">DNA, inheritance, and genetic variation</p>
+                                      </div>
+                                      <div className="bg-neutral-50 p-4 rounded-lg">
+                                        <h3 className="font-semibold text-neutral-800 mb-2">Evolution</h3>
+                                        <p className="text-sm text-neutral-600">Natural selection and adaptation</p>
+                                      </div>
+                                      <div className="bg-neutral-50 p-4 rounded-lg">
+                                        <h3 className="font-semibold text-neutral-800 mb-2">Ecology</h3>
+                                        <p className="text-sm text-neutral-600">Organism interactions and ecosystems</p>
+                                      </div>
+                                    </div>
+                                    
+                                    <h2 className="text-xl font-semibold text-neutral-800 mb-4">Practice Questions</h2>
+                                    <p className="text-neutral-700 mb-4 leading-relaxed">
+                                      Test your understanding with these key questions: What is the difference between prokaryotic and eukaryotic cells? How does natural selection drive evolution? What are the main components of an ecosystem?
+                                    </p>
+                                  </>
+                                ) : (
+                                  <>
+                                    <h1 className="text-2xl font-bold text-neutral-900 mb-6">Math Formulas: Essential Reference Guide</h1>
+                                    
+                                    <h2 className="text-xl font-semibold text-neutral-800 mb-4">📐 Geometry Formulas</h2>
+                                    <div className="bg-neutral-50 p-4 rounded-lg mb-4">
+                                      <p className="text-neutral-700 font-mono">Area of Circle: A = πr²</p>
+                                      <p className="text-neutral-700 font-mono">Area of Triangle: A = ½bh</p>
+                                      <p className="text-neutral-700 font-mono">Pythagorean Theorem: a² + b² = c²</p>
+                                    </div>
+                                    
+                                    <h2 className="text-xl font-semibold text-neutral-800 mb-4">🧮 Calculus Formulas</h2>
+                                    <div className="bg-neutral-50 p-4 rounded-lg mb-4">
+                                      <p className="text-neutral-700 font-mono">Derivative of xⁿ: d/dx(xⁿ) = nxⁿ⁻¹</p>
+                                      <p className="text-neutral-700 font-mono">Integral of xⁿ: ∫xⁿdx = (xⁿ⁺¹)/(n+1) + C</p>
+                                      <p className="text-neutral-700 font-mono">Chain Rule: d/dx(f(g(x))) = f'(g(x)) × g'(x)</p>
+                                    </div>
+                                    
+                                    <h2 className="text-xl font-semibold text-neutral-800 mb-4">Study Strategies</h2>
+                                    <ul className="list-disc pl-6 mb-4 space-y-2">
+                                      <li className="text-neutral-700">Practice deriving formulas from basic principles</li>
+                                      <li className="text-neutral-700">Create flashcards for quick formula recall</li>
+                                      <li className="text-neutral-700">Apply formulas to real-world problems</li>
+                                      <li className="text-neutral-700">Review regularly to maintain proficiency</li>
+                                    </ul>
+                                  </>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                                    {activeToolTab === 'quizzes' && (
+                    <div className="flex-1 flex flex-col">
+                      {!isPracticingQuiz ? (
+                        <>
+                          {/* My Quizzes Section */}
+                          <div className="mb-8 mt-12">
+                           <div className="flex items-center justify-between mb-4">
+                             <h2 className="text-base font-semibold text-neutral-900">My Quizzes</h2>
+                             <button className="px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
+                               <Plus className="w-4 h-4" />
+                               Generate Quiz
+                             </button>
+                           </div>
+                           
+                                                       {/* Quizzes List */}
+                            <div className="space-y-4">
+                             {/* Multiple Choice Quiz */}
+                             <div 
+                               className="bg-white border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer group"
+                               onClick={() => {
+                                 setCurrentQuizType('multiple-choice');
+                                 setQuizQuestions(multipleChoiceQuiz);
+                                 setIsPracticingQuiz(true);
+                               }}
+                             >
+                                                                 <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <HelpCircle className="w-6 h-6 text-neutral-600" />
+                                      </div>
+                                      <div>
+                                        <h3 className="font-medium text-neutral-900">Biology Multiple Choice</h3>
+                                        <p className="text-sm text-neutral-500">3 questions</p>
+                                        <p className="text-xs text-neutral-400">Multiple choice format</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                   <button 
+                                     className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       // Handle edit
+                                       console.log('Edit quiz');
+                                     }}
+                                   >
+                                     <Edit className="w-4 h-4" />
+                                   </button>
+                                   <button 
+                                     className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       // Handle delete
+                                       console.log('Delete quiz');
+                                     }}
+                                   >
+                                     <Trash2 className="w-4 h-4" />
+                                   </button>
+                                 </div>
+                               </div>
+                             </div>
+
+                             {/* Written Answer Quiz */}
+                             <div 
+                               className="bg-white border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer group"
+                               onClick={() => {
+                                 setCurrentQuizType('written');
+                                 setQuizQuestions(writtenQuiz);
+                                 setIsPracticingQuiz(true);
+                               }}
+                             >
+                                                                 <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-3">
+                                      <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                        <HelpCircle className="w-6 h-6 text-neutral-600" />
+                                      </div>
+                                      <div>
+                                        <h3 className="font-medium text-neutral-900">Biology Written Answers</h3>
+                                        <p className="text-sm text-neutral-500">3 questions</p>
+                                        <p className="text-xs text-neutral-400">Written response format</p>
+                                      </div>
+                                    </div>
+                                    <div className="flex items-center gap-2">
+                                   <button 
+                                     className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       // Handle edit
+                                       console.log('Edit quiz');
+                                     }}
+                                   >
+                                     <Edit className="w-4 h-4" />
+                                   </button>
+                                   <button 
+                                     className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                                     onClick={(e) => {
+                                       e.stopPropagation();
+                                       // Handle delete
+                                       console.log('Delete quiz');
+                                     }}
+                                   >
+                                     <Trash2 className="w-4 h-4" />
+                                   </button>
+                                 </div>
+                               </div>
+                             </div>
+                           </div>
+                         </div>
+                       </>
+                     ) : (
+                       /* Quiz Practice Interface */
+                       <div className="flex-1 flex flex-col">
+                         {/* Top Navigation */}
+                         <div className="mb-3 mt-12">
+                           {/* Back Button */}
+                           <button 
+                             onClick={() => {
+                               setIsPracticingQuiz(false);
+                               setCurrentQuizType(null);
+                               setQuizQuestions([]);
+                             }}
+                             className="text-neutral-600 hover:text-neutral-900 transition-colors flex items-center gap-2 mb-3"
+                           >
+                             <ChevronLeft className="w-4 h-4" />
+                             Back
+                           </button>
+                           
+                           {/* Progress Bar */}
+                           <div className="w-full">
+                             <div className="flex items-center justify-between text-sm text-neutral-600 mb-2">
+                               <span>{currentQuizIndex + 1}</span>
+                               <span>{quizQuestions.length}</span>
+                             </div>
+                             <div className="w-full bg-neutral-200 rounded-full h-2">
+                               <div 
+                                 className="bg-neutral-900 h-2 rounded-full transition-all duration-300"
+                                 style={{ width: `${((currentQuizIndex + 1) / quizQuestions.length) * 100}%` }}
+                               ></div>
+                             </div>
+                           </div>
+                         </div>
+
+                         {/* Quiz Question */}
+                         <div className="flex-1 flex flex-col items-center justify-center">
+                           <div className="relative w-full max-w-4xl" style={{ aspectRatio: '760/456' }}>
+                             {/* Question Card */}
+                             <div className="w-full h-full bg-white border border-neutral-200 rounded-lg p-12 shadow-sm">
+                                                                                               {/* Hint Toggle Button - Top Left */}
+                                 <div className="absolute top-6 left-6">
+                                   {/* Hint - Only show before answer */}
+                                   {!showQuizAnswer && (
+                                     <button 
+                                       onClick={() => setShowQuizHint(!showQuizHint)}
+                                       className="flex items-center gap-2 text-sm text-neutral-500 hover:text-neutral-700 transition-colors"
+                                     >
+                                       <HelpCircle className="w-4 h-4" />
+                                       {showQuizHint ? 'Hide' : 'Hint'}
+                                     </button>
+                                   )}
+                                 </div>
+
+                               {/* Question Content */}
+                               <div className="text-center h-full flex flex-col items-center justify-center">
+                                 <h2 className="text-2xl font-medium text-neutral-900 px-8 mb-8">
+                                   {quizQuestions[currentQuizIndex]?.question}
+                                 </h2>
+                                 
+                                                                   {/* Hint Text - Only show before answer */}
+                                  {!showQuizAnswer && showQuizHint && (
+                                    <div className="text-sm text-neutral-600 mb-4">
+                                      <span className="font-medium">Hint:</span> {quizQuestions[currentQuizIndex]?.hint}
+                                    </div>
+                                  )}
+
+                                                                   {/* Multiple Choice Options */}
+                                  {quizQuestions[currentQuizIndex]?.type === 'multiple-choice' && (
+                                    <div className="space-y-3 w-full max-w-md">
+                                      {Object.entries(quizQuestions[currentQuizIndex]?.options || {}).map(([key, value]) => {
+                                        const currentQuestion = quizQuestions[currentQuizIndex];
+                                        const isCorrect = key === currentQuestion.correctAnswer;
+                                        const isSelected = selectedAnswer === key;
+                                        const showAnswer = showQuizAnswer;
+                                        
+                                        let borderStyle = "border-neutral-200";
+                                        if (showAnswer) {
+                                          if (isCorrect) {
+                                            // Correct answer gets dotted green border
+                                            borderStyle = "border-dotted border-green-400";
+                                          } else if (isSelected) {
+                                            // Selected wrong answer gets solid red border
+                                            borderStyle = "border-red-400";
+                                          }
+                                        } else if (isSelected) {
+                                          // Before answer, selected option gets neutral border
+                                          borderStyle = "border-neutral-900";
+                                        }
+                                        
+                                                                                 return (
+                                           <button
+                                             key={key}
+                                             onClick={() => !showAnswer && handleAnswerSelect(key)}
+                                             disabled={showAnswer}
+                                             className={cn(
+                                               "w-full p-3 text-left border-2 rounded-lg transition-colors",
+                                               borderStyle,
+                                               showAnswer && isCorrect && "bg-green-50",
+                                               showAnswer && isSelected && !isCorrect && "bg-red-50",
+                                               !showAnswer && isSelected && "bg-neutral-50",
+                                               showAnswer && "cursor-not-allowed opacity-80"
+                                             )}
+                                           >
+                                             <span className="font-medium text-neutral-700 mr-3">{key.toUpperCase()}.</span>
+                                             <span className="text-neutral-900">{value}</span>
+                                           </button>
+                                         );
+                                      })}
+                                    </div>
+                                  )}
+
+                                 {/* Written Answer Input */}
+                                 {quizQuestions[currentQuizIndex]?.type === 'written' && (
+                                   <div className="w-full max-w-md">
+                                     <textarea
+                                       value={writtenAnswer}
+                                       onChange={(e) => handleWrittenAnswerChange(e.target.value)}
+                                       placeholder="Type your answer here..."
+                                       className="w-full p-3 border border-neutral-200 rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-neutral-500 focus:border-transparent"
+                                       rows={4}
+                                     />
+                                   </div>
+                                 )}
+
+                                                                                                      {/* Answer Display */}
+                                   {showQuizAnswer && (
+                                     <div className="mt-6 w-full max-w-md">
+                                       <div className="text-left">
+                                                                                  {/* Feedback Card with Icon and Explanation */}
+                                          <div className={cn(
+                                            "p-4 rounded-lg border-2",
+                                            (() => {
+                                              const currentQuestion = quizQuestions[currentQuizIndex];
+                                              if (clickedIDontKnow) {
+                                                // User clicked "I Don't Know" - yellow
+                                                return "bg-yellow-50 text-yellow-800 border-yellow-400";
+                                              } else if (currentQuestion.type === 'multiple-choice') {
+                                                if (selectedAnswer === currentQuestion.correctAnswer) {
+                                                  // User got it right - green
+                                                  return "bg-green-50 text-green-800 border-green-400";
+                                                } else {
+                                                  // User got it wrong - red
+                                                  return "bg-red-50 text-red-800 border-red-400";
+                                                }
+                                              } else {
+                                                // For written answers
+                                                if (writtenAnswer.trim() !== '') {
+                                                  return "bg-green-50 text-green-800 border-green-400";
+                                                } else {
+                                                  return "bg-red-50 text-red-800 border-red-400";
+                                                }
+                                              }
+                                            })()
+                                          )}>
+                                            {/* Header with Icon and Status */}
+                                            <div className="flex items-center gap-3 mb-3">
+                                              {/* Icon */}
+                                              {(() => {
+                                                const currentQuestion = quizQuestions[currentQuizIndex];
+                                                if (clickedIDontKnow) {
+                                                  return <HelpCircle className="w-5 h-5 text-yellow-600" />;
+                                                } else if (currentQuestion.type === 'multiple-choice') {
+                                                  if (selectedAnswer === currentQuestion.correctAnswer) {
+                                                    return <CheckCircle className="w-5 h-5 text-green-600" />;
+                                                  } else {
+                                                    return <XCircle className="w-5 h-5 text-red-600" />;
+                                                  }
+                                                } else {
+                                                  if (writtenAnswer.trim() !== '') {
+                                                    return <CheckCircle className="w-5 h-5 text-green-600" />;
+                                                  } else {
+                                                    return <XCircle className="w-5 h-5 text-red-600" />;
+                                                  }
+                                                }
+                                              })()}
+                                              
+                                              {/* Status Text */}
+                                              <div>
+                                                {(() => {
+                                                  const currentQuestion = quizQuestions[currentQuizIndex];
+                                                  if (clickedIDontKnow) {
+                                                    return <span className="font-medium">I Don't Know</span>;
+                                                  } else if (currentQuestion.type === 'multiple-choice') {
+                                                    if (selectedAnswer === currentQuestion.correctAnswer) {
+                                                      return <span className="font-medium">Correct!</span>;
+                                                    } else {
+                                                      return <span className="font-medium">Incorrect</span>;
+                                                    }
+                                                  } else {
+                                                    if (writtenAnswer.trim() !== '') {
+                                                      return <span className="font-medium">Answer Submitted</span>;
+                                                    } else {
+                                                      return <span className="font-medium">No Answer</span>;
+                                                    }
+                                                  }
+                                                })()}
+                                              </div>
+                                            </div>
+                                            
+                                            {/* Explanation - Inside the card with matching color */}
+                                            <p className={cn(
+                                              "text-sm",
+                                              (() => {
+                                                const currentQuestion = quizQuestions[currentQuizIndex];
+                                                if (clickedIDontKnow) {
+                                                  return "text-yellow-700";
+                                                } else if (currentQuestion.type === 'multiple-choice') {
+                                                  if (selectedAnswer === currentQuestion.correctAnswer) {
+                                                    return "text-green-700";
+                                                  } else {
+                                                    return "text-red-700";
+                                                  }
+                                                } else {
+                                                  if (writtenAnswer.trim() !== '') {
+                                                    return "text-green-700";
+                                                  } else {
+                                                    return "text-red-700";
+                                                  }
+                                                }
+                                              })()
+                                            )}>{quizQuestions[currentQuizIndex]?.explanation}</p>
+                                          </div>
+                                       </div>
+                                     </div>
+                                   )}
+                               </div>
+                             </div>
+                           </div>
+                           
+                           {/* Navigation Buttons - Bottom */}
+                           <div className="mt-6 flex justify-between w-full max-w-4xl">
+                             {/* Back Button - Bottom Left */}
+                             <button 
+                               onClick={handleQuizBack}
+                               disabled={currentQuizIndex === 0}
+                               className={cn(
+                                 "px-6 py-3 rounded-full transition-colors",
+                                 currentQuizIndex === 0
+                                   ? "bg-neutral-100 text-neutral-400 cursor-not-allowed"
+                                   : "bg-neutral-200 text-neutral-700 hover:bg-neutral-300"
+                               )}
+                             >
+                               Back
+                             </button>
+                             
+                                                           {/* Submit/Next Button - Bottom Right */}
+                              <button 
+                                onClick={showQuizAnswer ? handleQuizNext : handleQuizAnswer}
+                                className={cn(
+                                  "px-6 py-3 rounded-full transition-colors",
+                                  showQuizAnswer
+                                    ? "bg-neutral-900 text-white hover:bg-neutral-800"
+                                    : "bg-neutral-900 text-white hover:bg-neutral-800"
+                                )}
+                              >
+                                {showQuizAnswer ? 'Next' : (hasAnswered() ? 'Submit' : 'I Don\'t Know')}
+                              </button>
+                           </div>
+                         </div>
+                       </div>
+                     )}
+                   </div>
+                 )}
+
+                                   {!['ai-chat', 'summary', 'study-guide', 'flashcards', 'quizzes', 'notes'].includes(activeToolTab) && (
+                   <div className="min-h-[calc(100vh-300px)] flex flex-col items-center justify-center text-center">
+                     <div className="w-20 h-20 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                       {React.createElement(toolTabs.find(tab => tab.id === activeToolTab)?.icon || FileText, {
+                         className: "w-10 h-10 text-neutral-400"
+                       })}
+                     </div>
+                     <h2 className="text-2xl font-semibold text-neutral-900 mb-2">
+                       {toolTabs.find(tab => tab.id === activeToolTab)?.label}
+                     </h2>
+                     <p className="text-neutral-600 mb-8">Coming soon</p>
+                     <button className="px-6 py-3 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors">
+                       Get Notified
+                     </button>
+                   </div>
+                 )}
               </div>
             </div>
           </div>
@@ -1027,8 +2262,9 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
             {isSourcesDrawerOpen ? (
               // Expanded Sources Drawer
               <div className="h-full flex flex-col">
-                <div className="flex items-center justify-between p-4 border-b border-neutral-200">
-                  <h2 className="text-lg font-semibold text-neutral-900">Sources</h2>
+                {/* Header Section */}
+                <div className="flex items-center justify-between p-4">
+                  <h2 className="text-base font-semibold text-neutral-900">My Sources</h2>
                   <button
                     onClick={() => setIsSourcesDrawerOpen(false)}
                     className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors"
@@ -1036,69 +2272,82 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                     <ChevronRight className="w-4 h-4 text-neutral-600" />
                   </button>
                 </div>
-                <div className="flex-1 p-4 overflow-y-auto">
-                  <div className="space-y-3">
-                    {/* Select All */}
-                    <div className="flex items-center gap-3 p-3 border border-neutral-200 rounded-full bg-neutral-50">
-                      <input
-                        type="checkbox"
-                        id="select-all"
-                        checked={isAllSourcesSelected}
-                        onChange={toggleSelectAllSources}
-                        className="w-4 h-4 text-neutral-900 bg-neutral-100 border-neutral-300 rounded focus:ring-neutral-500"
-                      />
-                      <label htmlFor="select-all" className="text-sm font-medium text-neutral-900 cursor-pointer">
-                        Select All Sources
+                
+                {/* Add Source Button */}
+                <div className="px-4 mb-4">
+                  <button className="w-full px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center justify-center gap-2">
+                    <Plus className="w-4 h-4" />
+                    Add Source
+                  </button>
+                </div>
+                
+                {/* Sources List */}
+                <div className="flex-1 px-4 overflow-y-auto">
+                  <div className="space-y-4">
+                    {/* Select All Toggle */}
+                    <div className="flex items-center gap-3 mb-4">
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          id="select-all"
+                          checked={isAllSourcesSelected}
+                          onChange={toggleSelectAllSources}
+                          className="sr-only peer"
+                        />
+                        <div className="w-9 h-5 bg-neutral-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-neutral-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-neutral-900"></div>
                       </label>
+                      <span className="text-xs text-neutral-600">Select All Sources</span>
                     </div>
-
-                    <button className="w-full p-3 border-2 border-dashed border-neutral-300 rounded-full text-neutral-500 hover:border-neutral-400 transition-colors text-sm">
-                      + Add new source
-                    </button>
                     
+                    {/* Source Cards */}
                     {sources.map((source) => {
                       const Icon = getSourceIcon(source.type);
                       return (
                         <div 
                           key={source.id}
                           onClick={() => enterSourcePreview(source.id)}
-                          className="p-3 border border-neutral-200 rounded-full hover:bg-neutral-50 transition-colors duration-200 cursor-pointer group"
+                          className="bg-white border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer group"
                         >
-                          <div className="flex items-center gap-3">
-                            {/* Source Type Icon */}
-                            <div className="relative w-4 h-4 flex-shrink-0">
-                              <Icon className="w-4 h-4 absolute inset-0 transition-all duration-200 opacity-100 group-hover:opacity-0 text-neutral-600" />
-                              <button
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  // Show source options menu here
-                                }}
-                                className="absolute inset-0 w-4 h-4 flex items-center justify-center transition-all duration-200 opacity-0 group-hover:opacity-100"
-                                title="Source options"
-                              >
-                                <MoreHorizontal className="w-4 h-4 text-neutral-500" />
-                              </button>
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                              {/* Source Type Icon - Replaced by Options Menu on Hover */}
+                              <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0 relative">
+                                <Icon className="w-5 h-5 text-neutral-600 transition-opacity duration-200 group-hover:opacity-0" />
+                                <button
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    // Show source options menu here
+                                  }}
+                                  className="absolute inset-0 w-full h-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                                  title="Source options"
+                                >
+                                  <MoreHorizontal className="w-5 h-5 text-neutral-600" />
+                                </button>
+                              </div>
+                              <div>
+                                <h3 className="font-medium text-neutral-900">{source.name}</h3>
+                                <p className="text-sm text-neutral-500">{source.type}</p>
+                              </div>
                             </div>
-
-                            {/* Source Name */}
-                            <div className="min-w-0 flex-1">
-                              <span className="text-sm font-medium text-neutral-900 truncate block">
-                                {source.name}
-                              </span>
+                            
+                            {/* Action Buttons */}
+                            <div className="flex items-center gap-2">
+                              {/* Toggle Selection */}
+                              <label className="relative inline-flex items-center cursor-pointer">
+                                <input
+                                  type="checkbox"
+                                  id={`source-${source.id}`}
+                                  checked={selectedSources.includes(source.id)}
+                                  onChange={(e) => {
+                                    e.stopPropagation();
+                                    toggleSourceSelection(source.id);
+                                  }}
+                                  onClick={(e) => e.stopPropagation()}
+                                  className="sr-only peer"
+                                />
+                                <div className="w-9 h-5 bg-neutral-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-neutral-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-neutral-900"></div>
+                              </label>
                             </div>
-
-                            {/* Checkbox */}
-                            <input
-                              type="checkbox"
-                              id={`source-${source.id}`}
-                              checked={selectedSources.includes(source.id)}
-                              onChange={(e) => {
-                                e.stopPropagation();
-                                toggleSourceSelection(source.id);
-                              }}
-                              onClick={(e) => e.stopPropagation()}
-                              className="w-4 h-4 text-neutral-900 bg-neutral-100 border-neutral-300 rounded focus:ring-neutral-500"
-                            />
                           </div>
                         </div>
                       );

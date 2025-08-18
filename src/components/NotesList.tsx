@@ -44,12 +44,21 @@ const NotesList: React.FC<NotesListProps> = ({
     <div className="flex-1 flex flex-col">
       {notes.length > 0 ? (
         <>
-          {/* My Notes Section */}
-          <div className="mb-8">
-            <h2 className="text-xl font-semibold text-neutral-900 mb-4">My Notes</h2>
+                  {/* My Notes Section */}
+        <div className="mb-8 mt-12">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-base font-semibold text-neutral-900">My Notes</h2>
+              <button 
+                onClick={onNoteCreate}
+                className="px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2"
+              >
+                <Plus className="w-4 h-4" />
+                Create Note
+              </button>
+            </div>
             
             {/* Notes List */}
-            <div className="space-y-3">
+            <div className="space-y-4">
               {notes.map((note) => (
                 <div 
                   key={note.id}
@@ -58,15 +67,16 @@ const NotesList: React.FC<NotesListProps> = ({
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center">
-                        <FileText className="w-5 h-5 text-neutral-600" />
+                      <div className="w-12 h-12 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                        <FileText className="w-6 h-6 text-neutral-600" />
                       </div>
                       <div>
                         <h3 className="font-medium text-neutral-900">New Note</h3>
-                        <p className="text-sm text-neutral-500">Last modified {formatTimeAgo(note.lastModified)}</p>
+                        <p className="text-sm text-neutral-500">Note</p>
+                        <p className="text-xs text-neutral-400">{formatTimeAgo(note.lastModified)}</p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex items-center gap-2">
                       <button 
                         className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
                         onClick={(e) => {
@@ -92,17 +102,6 @@ const NotesList: React.FC<NotesListProps> = ({
                 </div>
               ))}
             </div>
-          </div>
-
-          {/* Create Note Button */}
-          <div className="flex justify-center">
-            <button 
-              onClick={onNoteCreate}
-              className="px-6 py-3 bg-neutral-900 text-white rounded-full hover:bg-neutral-800 transition-colors font-medium flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              Create Note
-            </button>
           </div>
         </>
       ) : (

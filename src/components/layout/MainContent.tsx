@@ -89,7 +89,7 @@ const MainContent: React.FC<MainContentProps> = ({ isSidebarCollapsed = false })
 
         {/* Recents section */}
         <div>
-          <h2 className="text-xl font-medium text-neutral-800 mb-6">Recents</h2>
+          <h2 className="text-base font-medium text-neutral-800 mb-6">Recents</h2>
           
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             {recentItems.map((item, index) => {

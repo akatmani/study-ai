@@ -45,7 +45,7 @@ const BlockNoteEditor: React.FC<BlockNoteEditorProps> = ({
             onClick={onBack}
             className="text-neutral-600 hover:text-neutral-900 transition-colors flex items-center gap-2"
           >
-            ← Back to Notes
+            ← Back
           </button>
         )}
         {onConvertToSource && (
