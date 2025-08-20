@@ -18,7 +18,7 @@ const BlockNoteEditor = dynamic(
 
 interface Note {
   id: string;
-  name: string;
+  title: string;
   content: any;
   lastModified: Date;
 }
@@ -32,13 +32,13 @@ const NotesEditor: React.FC<NotesEditorProps> = (props) => {
   const [notes, setNotes] = useState<Note[]>([
     {
       id: '1',
-      name: 'New Note',
+      title: 'New Note',
       content: [],
       lastModified: new Date(Date.now() - 2 * 60 * 60 * 1000) // 2 hours ago
     },
     {
       id: '2',
-      name: 'New Note',
+      title: 'New Note',
       content: [],
       lastModified: new Date(Date.now() - 24 * 60 * 60 * 1000) // 1 day ago
     }
@@ -55,7 +55,7 @@ const NotesEditor: React.FC<NotesEditorProps> = (props) => {
   const handleNoteCreate = () => {
     const newNote: Note = {
       id: Date.now().toString(),
-      name: 'New Note',
+      title: 'New Note',
       content: [],
       lastModified: new Date()
     };
@@ -98,7 +98,7 @@ const NotesEditor: React.FC<NotesEditorProps> = (props) => {
         <BlockNoteEditor
           initialContent={selectedNote.content}
           onChange={handleNoteChange}
-          noteName={selectedNote.name}
+          noteName={selectedNote.title}
           onConvertToSource={() => handleNoteConvertToSource(selectedNote)}
           onBack={handleBackToList}
         />

@@ -68,7 +68,7 @@ export default function Home() {
   };
 
   return (
-    <div className="flex h-screen bg-white">
+    <div className="flex h-screen bg-neutral-50">
       {/* Background sidebar - always collapsed in preview mode, never changes */}
       <Sidebar 
         isCollapsed={isSourcePreviewMode ? true : isSidebarCollapsed}

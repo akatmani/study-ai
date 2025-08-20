@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { Plus, Trash2, FileText, Link } from 'lucide-react';
+import { Plus, FileText, Link, Trash2 } from 'lucide-react';
+import { Button, Card } from '@/components/ui';
 
 interface Note {
   id: string;
-  name: string;
-  content: any;
+  title: string;
+  content: string;
   lastModified: Date;
 }
 
@@ -25,7 +26,8 @@ const NotesList: React.FC<NotesListProps> = ({
 }) => {
   const formatTimeAgo = (date: Date) => {
     const now = new Date();
-    const diffInHours = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60));
+    const diffInMs = now.getTime() - date.getTime();
+    const diffInHours = Math.floor(diffInMs / (1000 * 60 * 60));
     
     if (diffInHours < 1) return 'Just now';
     if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
@@ -44,25 +46,26 @@ const NotesList: React.FC<NotesListProps> = ({
     <div className="flex-1 flex flex-col">
       {notes.length > 0 ? (
         <>
-                  {/* My Notes Section */}
-        <div className="mb-8 mt-12">
+          {/* My Notes Section */}
+          <div className="mb-8 mt-12">
             <div className="flex items-center justify-between mb-4">
               <h2 className="text-base font-semibold text-neutral-900">My Notes</h2>
-              <button 
+              <Button 
+                variant="outline"
+                size="md"
                 onClick={onNoteCreate}
-                className="px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2"
               >
                 <Plus className="w-4 h-4" />
                 Create Note
-              </button>
+              </Button>
             </div>
             
             {/* Notes List */}
             <div className="space-y-4">
               {notes.map((note) => (
-                <div 
+                <Card 
                   key={note.id}
-                  className="bg-white border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer group"
+                  className="p-4 hover:bg-neutral-50 transition-colors cursor-pointer group"
                   onClick={() => onNoteSelect(note)}
                 >
                   <div className="flex items-center justify-between">
@@ -77,8 +80,10 @@ const NotesList: React.FC<NotesListProps> = ({
                       </div>
                     </div>
                     <div className="flex items-center gap-2">
-                      <button 
-                        className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                      <Button 
+                        variant="ghost"
+                        size="sm"
+                        className="p-2"
                         onClick={(e) => {
                           e.stopPropagation();
                           onNoteConvertToSource(note);
@@ -86,9 +91,11 @@ const NotesList: React.FC<NotesListProps> = ({
                         title="Convert to Source"
                       >
                         <Link className="w-4 h-4" />
-                      </button>
-                      <button 
-                        className="p-2 text-neutral-600 hover:text-neutral-900 hover:bg-neutral-100 rounded-lg transition-colors"
+                      </Button>
+                      <Button 
+                        variant="ghost"
+                        size="sm"
+                        className="p-2"
                         onClick={(e) => {
                           e.stopPropagation();
                           onNoteDelete(note.id);
@@ -96,10 +103,10 @@ const NotesList: React.FC<NotesListProps> = ({
                         title="Delete Note"
                       >
                         <Trash2 className="w-4 h-4" />
-                      </button>
+                      </Button>
                     </div>
                   </div>
-                </div>
+                </Card>
               ))}
             </div>
           </div>
@@ -107,18 +114,19 @@ const NotesList: React.FC<NotesListProps> = ({
       ) : (
         <div className="flex-1 flex flex-col items-center justify-center">
           <div className="text-center">
-            <div className="w-16 h-16 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-4">
+            <div className="w-16 h-16 bg-neutral-100 rounded-lg flex items-center justify-center mx-auto mb-4">
               <Plus className="w-8 h-8 text-neutral-400" />
             </div>
             <h3 className="text-lg font-medium text-neutral-900 mb-2">No notes yet</h3>
             <p className="text-neutral-600 mb-6">Create your first note to get started</p>
-            <button
+            <Button
+              variant="primary"
+              size="lg"
               onClick={onNoteCreate}
-              className="px-6 py-3 bg-neutral-900 text-white rounded-full hover:bg-neutral-800 transition-colors font-medium flex items-center gap-2"
             >
               <Plus className="w-4 h-4" />
               Create Note
-            </button>
+            </Button>
           </div>
         </div>
       )}

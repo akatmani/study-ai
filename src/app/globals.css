@@ -13,22 +13,9 @@
 }
 
 @layer components {
-  /* Button styles - minimal accent usage as requested */
-  .btn-secondary {
-    @apply px-4 py-2 bg-white border border-neutral-200 text-neutral-600 rounded-full hover:bg-neutral-50 hover:border-neutral-300 transition-colors duration-200 font-medium text-sm;
-  }
-  
-  .btn-primary {
-    @apply px-4 py-2 bg-accent-500 text-white rounded-full hover:bg-accent-600 transition-colors duration-200 font-medium text-sm;
-  }
-  
-  .btn-destructive {
-    @apply px-4 py-2 bg-white border border-red-200 text-red-600 rounded-full hover:bg-red-50 hover:border-red-300 transition-colors duration-200 font-medium text-sm;
-  }
-  
   /* Navigation styles */
   .nav-item {
-    @apply flex items-center gap-3 px-3 py-2 rounded-full text-neutral-900 hover:bg-neutral-100 transition-colors duration-200 cursor-pointer;
+    @apply flex items-center gap-3 px-3 py-2 rounded-lg text-neutral-900 hover:bg-neutral-100 transition-colors duration-200 cursor-pointer;
     font-size: 14px;
     line-height: 20px;
     font-weight: 400;
@@ -40,11 +27,11 @@
   
   /* Card styles with subtle shadows */
   .card {
-    @apply bg-white border border-neutral-200 rounded-full shadow-subtle;
+    @apply bg-white border border-neutral-200 rounded-lg shadow-subtle;
   }
   
   .card-soft {
-    @apply bg-white border border-neutral-200 rounded-full shadow-soft;
+    @apply bg-white border border-neutral-200 rounded-lg shadow-soft;
   }
 
   /* BlockNote Editor Overrides */

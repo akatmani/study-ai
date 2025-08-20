@@ -187,9 +187,9 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div className={cn(
-      "left-nav h-screen bg-neutral-50 border-r border-neutral-200 flex flex-col transition-all duration-300 overflow-hidden",
+      "left-nav h-screen bg-neutral-50 flex flex-col transition-all duration-300 overflow-hidden",
       isOverlay
-        ? "fixed inset-y-0 left-0 z-50 w-64 transform transition-transform duration-300 -translate-x-full data-[open=true]:translate-x-0"
+        ? "fixed inset-y-0 left-0 z-[9999] w-64 transform transition-transform duration-300 -translate-x-full data-[open=true]:translate-x-0 rounded-tr-lg rounded-br-lg"
         : "relative w-64 flex-shrink-0",
       isCollapsed && !isOverlay ? "" : "w-64",
       className
@@ -199,7 +199,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     }}
     data-open={!isCollapsed || isOverlay}>
       {/* Header */}
-      <div className="px-4 py-3 flex items-center justify-between min-h-[56px]">
+      <div className="px-4 pt-7 pb-3 flex items-center justify-between min-h-[56px]">
         {isCollapsed ? (
           <div className="w-full flex justify-center group">
             <div className="relative w-8 h-8 flex items-center justify-center">

@@ -33,6 +33,7 @@ import {
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import NotesEditor from '../NotesEditor';
+import FloatingSourcesTabs from '../FloatingSourcesTabs';
 
 interface DocumentPageProps {
   studySetName: string;
@@ -64,11 +65,12 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
   const [activeSourceId, setActiveSourceId] = useState('1');
   const [activeDrawer, setActiveDrawer] = useState<string | null>(null);
   const [isDrawerFullScreen, setIsDrawerFullScreen] = useState(false);
-  const [isSourcesDrawerOpen, setIsSourcesDrawerOpen] = useState(false);
+
   const [activeToolTab, setActiveToolTab] = useState('ai-chat');
   const [selectedSources, setSelectedSources] = useState<string[]>(['1']); // Start with first source selected
   const [sourcePreviewMode, setSourcePreviewMode] = useState<string | null>(null); // Source ID being previewed
   const [chatInput, setChatInput] = useState(''); // Chat input state
+  const [isSourcesExpanded, setIsSourcesExpanded] = useState(false); // Track sources bar expansion state
   
   // Flashcard practice state
   const [isPracticingFlashcards, setIsPracticingFlashcards] = useState(false);
@@ -381,42 +383,51 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
 
       {/* Source Preview Mode Layout */}
       {sourcePreviewMode && previewedSource && (
-        <div className="h-full flex">
-          {/* Main Tools Content - Fixed quarter width */}
-          <div className="w-1/4 flex flex-col border-r border-neutral-200">
-            {/* Document Header */}
-            <div className="px-4 pt-4 pb-4">
-              <h1 className="text-base font-normal text-neutral-900 mb-4" style={{ fontSize: '18px', fontWeight: 400 }}>
-                {studySetName}
-              </h1>
+        <div className="h-full flex bg-neutral-50">
+          {/* Main Tools Content - Floating with rounded corners */}
+          <div className="w-1/4 flex flex-col mr-4">
+            {/* Floating Main Tools Container */}
+            <div className="mt-4 mb-4 bg-white border border-neutral-200 rounded-lg flex-1 flex flex-col overflow-hidden relative">
+              {/* Menu Button - Top Right */}
+              <button className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-neutral-100 transition-colors z-10">
+                <MoreHorizontal className="w-5 h-5 text-neutral-600" />
+              </button>
+              
+              {/* Document Header */}
+              <div className="px-4 pt-4 pb-4">
+                <div className="mb-4">
+                  <h1 className="text-base font-normal text-neutral-900" style={{ fontSize: '18px', fontWeight: 400 }}>
+                    {studySetName}
+                  </h1>
+                </div>
 
-              {/* Tool Tabs - Compact Design for Preview Mode */}
-              <div className="w-full flex justify-center mb-4">
-                <div className="bg-neutral-100 rounded-full p-1 flex items-center gap-1">
-                  {toolTabs.map((tab) => {
-                    const Icon = tab.icon;
-                    return (
-                      <button
-                        key={tab.id}
-                        onClick={() => setActiveToolTab(tab.id)}
-                        className={cn(
-                          "flex items-center justify-center w-10 h-10 text-xs font-medium transition-all duration-200 rounded-full",
-                          activeToolTab === tab.id
-                            ? "bg-white text-neutral-900 shadow-sm"
-                            : "text-neutral-600 hover:text-neutral-900 hover:bg-white/50"
-                        )}
-                        title={tab.label}
-                      >
-                        <Icon className="w-5 h-5" />
-                      </button>
-                    );
-                  })}
+                {/* Tool Tabs - Compact Design for Preview Mode */}
+                <div className="w-full flex justify-center mb-4">
+                  <div className="bg-neutral-100 rounded-full p-1 flex items-center gap-1">
+                    {toolTabs.map((tab) => {
+                      const Icon = tab.icon;
+                      return (
+                        <button
+                          key={tab.id}
+                          onClick={() => setActiveToolTab(tab.id)}
+                          className={cn(
+                            "flex items-center justify-center w-10 h-10 text-xs font-medium transition-all duration-200 rounded-full",
+                            activeToolTab === tab.id
+                              ? "bg-white text-neutral-900 shadow-sm"
+                              : "text-neutral-600 hover:text-neutral-900 hover:bg-white/50"
+                          )}
+                          title={tab.label}
+                        >
+                          <Icon className="w-5 h-5" />
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
               </div>
-            </div>
 
-            {/* Tool Content */}
-            <div className="flex-1 flex flex-col px-4 py-4">
+              {/* Tool Content */}
+              <div className="flex-1 flex flex-col px-4 py-4">
               {/* Simplified content for preview mode */}
               {activeToolTab === 'ai-chat' && (
                 <div className="flex-1 flex flex-col h-full">
@@ -433,20 +444,20 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                     <div className="space-y-3 w-full">
                       {/* First Row */}
                       <div className="flex justify-center gap-2">
-                        <button className="px-4 py-2 border border-neutral-200 rounded-full text-xs text-neutral-700 hover:bg-neutral-50 transition-colors">
+                        <button className="px-4 py-2 border border-neutral-200 rounded-lg text-xs text-neutral-700 hover:bg-neutral-50 transition-colors">
                           Quiz
                         </button>
-                        <button className="px-4 py-2 border border-neutral-200 rounded-full text-xs text-neutral-700 hover:bg-neutral-50 transition-colors">
+                        <button className="px-4 py-2 border border-neutral-200 rounded-lg text-xs text-neutral-700 hover:bg-neutral-50 transition-colors">
                           Mind Map
                         </button>
                       </div>
                       
                       {/* Second Row */}
                       <div className="flex justify-center gap-2">
-                        <button className="px-4 py-2 border border-neutral-200 rounded-full text-xs text-neutral-700 hover:bg-neutral-50 transition-colors">
+                        <button className="px-4 py-2 border border-neutral-200 rounded-lg text-xs text-neutral-700 hover:bg-neutral-50 transition-colors">
                           Flashcards
                         </button>
-                        <button className="px-4 py-2 border border-neutral-200 rounded-full text-xs text-neutral-700 hover:bg-neutral-50 transition-colors">
+                        <button className="px-4 py-2 border border-neutral-200 rounded-lg text-xs text-neutral-700 hover:bg-neutral-50 transition-colors">
                           Search
                         </button>
                       </div>
@@ -469,20 +480,20 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                       <div className="flex items-center justify-between">
                         {/* Left Side - Add Context */}
                         <div className="flex items-center gap-2">
-                          <button className="px-2 py-1 text-xs text-neutral-700 border border-neutral-200 rounded-full hover:bg-neutral-50 transition-colors">
+                          <button className="px-2 py-1 text-xs text-neutral-700 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors">
                             @ Add Context
                           </button>
                         </div>
                         
                         {/* Right Side - Action Buttons */}
                         <div className="flex items-center gap-1">
-                          <button className="p-1 text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors" title="Attach file">
+                          <button className="p-1 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors" title="Attach file">
                             <Paperclip className="w-3 h-3" />
                           </button>
-                          <button className="p-1 text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors" title="Voice input">
-                            <Mic className="w-3 h-3" />
+                          <button className="p-1 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors" title="Voice input">
+                            <Mic className="w-3 h-4" />
                           </button>
-                          <button className="w-8 h-8 rounded-full flex items-center justify-center bg-neutral-900 text-white hover:bg-neutral-800 transition-colors">
+                          <button className="w-8 h-8 rounded-lg flex items-center justify-center bg-neutral-900 text-white hover:bg-neutral-800 transition-colors">
                             <ArrowUp className="w-4 h-4" />
                           </button>
                         </div>
@@ -503,7 +514,7 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                   <div className="mb-8">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-base font-semibold text-neutral-900">My Decks</h2>
-                      <button className="px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
+                      <button className="px-4 py-2 border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
                         <Plus className="w-4 h-4" />
                         Generate Flashcards
                       </button>
@@ -599,7 +610,7 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                   <div className="mb-8">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-base font-semibold text-neutral-900">My Summaries</h2>
-                      <button className="px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
+                      <button className="px-4 py-2 border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
                         <Plus className="w-4 h-4" />
                         Generate Summary
                       </button>
@@ -695,7 +706,7 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                   <div className="mb-8">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-base font-semibold text-neutral-900">My Guides</h2>
-                      <button className="px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
+                      <button className="px-4 py-2 border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
                         <Plus className="w-4 h-4" />
                         Generate Guide
                       </button>
@@ -791,7 +802,7 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                   <div className="mb-8">
                     <div className="flex items-center justify-between mb-4">
                       <h2 className="text-base font-semibold text-neutral-900">My Quizzes</h2>
-                      <button className="px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
+                      <button className="px-4 py-2 border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
                         <Plus className="w-4 h-4" />
                         Generate Quiz
                       </button>
@@ -904,221 +915,117 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                   </div>
                   <h2 className="text-lg font-semibold text-neutral-900 mb-2">{toolTabs.find(tab => tab.id === activeToolTab)?.label}</h2>
                   <p className="text-sm text-neutral-600 mb-4">Coming soon</p>
-                  <button className="px-4 py-2 bg-neutral-900 text-white rounded-full hover:bg-neutral-800 transition-colors text-sm">
+                  <button className="px-4 py-2 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 transition-colors text-sm">
                     Get Notified
                   </button>
                 </div>
               )}
             </div>
           </div>
-
-          {/* Source Preview Content - Adjusts width based on sidebar state */}
-          <div className="flex flex-col" style={{
-            width: isSourcesDrawerOpen ? 'calc(75% - 320px)' : 'calc(75% - 64px)'
-          }}>
-            {/* Preview Header */}
-            <div className="px-4 pt-4 pb-4">
-              {/* Source Name with Exit Button */}
-              <div className="flex items-center gap-3 mb-4">
-                {/* Exit Button */}
-                <button
-                  onClick={exitSourcePreview}
-                  className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors"
-                  title="Exit preview"
-                >
-                  <X className="w-4 h-4 text-neutral-600" />
-                </button>
-                
-                {/* Source Name */}
-                <h1 className="text-base font-normal text-neutral-900" style={{ fontSize: '18px', fontWeight: 400 }}>
-                  {previewedSource.name}
-                </h1>
-              </div>
-            </div>
-
-            {/* Preview Content */}
-            <div className="flex-1 overflow-hidden">
-              {previewedSource.type === 'link' ? (
-                <iframe
-                  src={previewedSource.url}
-                  className="w-full h-full border-0"
-                  title={previewedSource.name}
-                />
-              ) : (
-                <div className="p-8 h-full flex items-center justify-center">
-                  <div className="text-center text-neutral-500">
-                    <FileText className="w-16 h-16 mx-auto mb-4 text-neutral-300" />
-                    <p className="text-lg mb-2">No preview available</p>
-                    <p className="text-sm">This source type doesn't support preview</p>
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Sources Drawer - Can be expanded or collapsed in preview mode */}
-          <div className={cn(
-            "bg-white border-l border-neutral-200 transition-all duration-300",
-            isSourcesDrawerOpen ? "w-80" : "w-16"
-          )}>
-            {isSourcesDrawerOpen ? (
-              // Expanded Sources Drawer in Preview Mode
-              <div className="h-full flex flex-col">
-                {/* Header Section */}
-                <div className="flex items-center justify-between p-4">
-                  <h2 className="text-base font-semibold text-neutral-900">My Sources</h2>
-                  <button
-                    onClick={() => setIsSourcesDrawerOpen(false)}
-                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors"
-                  >
-                    <ChevronRight className="w-4 h-4 text-neutral-600" />
-                  </button>
-                </div>
-                
-                {/* Add Source Button */}
-                <div className="px-4 mb-4">
-                  <button className="w-full px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center justify-center gap-2">
-                    <Plus className="w-4 h-4" />
-                    Add Source
-                  </button>
-                </div>
-                
-                {/* Sources List */}
-                <div className="flex-1 px-4 overflow-y-auto">
-                  <div className="space-y-4">
-                    {/* Select All Toggle */}
-                    <div className="flex items-center gap-3 mb-4">
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          id="select-all-preview"
-                          checked={isAllSourcesSelected}
-                          onChange={toggleSelectAllSources}
-                          className="sr-only peer"
-                        />
-                        <div className="w-9 h-5 bg-neutral-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-neutral-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-neutral-900"></div>
-                      </label>
-                      <span className="text-xs text-neutral-600">Select All Sources</span>
-                    </div>
-                    
-                    {/* Source Cards */}
-                    {sources.map((source) => {
-                      const Icon = getSourceIcon(source.type);
-                      const isActive = sourcePreviewMode === source.id;
-                      return (
-                        <div 
-                          key={source.id}
-                          onClick={() => switchPreviewSource(source.id)}
-                          className={cn(
-                            "bg-white border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer group",
-                            isActive ? "bg-neutral-100 border-neutral-300" : ""
-                          )}
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              {/* Source Type Icon - Replaced by Options Menu on Hover */}
-                              <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0 relative">
-                                <Icon className="w-5 h-5 text-neutral-600 transition-opacity duration-200 group-hover:opacity-0" />
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    // Show source options menu here
-                                  }}
-                                  className="absolute inset-0 w-full h-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                  title="Source options"
-                                >
-                                  <MoreHorizontal className="w-5 h-5 text-neutral-600" />
-                                </button>
-                              </div>
-                              <div>
-                                <h3 className="font-medium text-neutral-900">{source.name}</h3>
-                                <p className="text-sm text-neutral-500">{source.type}</p>
-                              </div>
-                            </div>
-                            
-                            {/* Action Buttons */}
-                            <div className="flex items-center gap-2">
-                              {/* Toggle Selection */}
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  id={`source-preview-${source.id}`}
-                                  checked={selectedSources.includes(source.id)}
-                                  onChange={(e) => {
-                                    e.stopPropagation();
-                                    toggleSourceSelection(source.id);
-                                  }}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="sr-only peer"
-                                />
-                                <div className="w-9 h-5 bg-neutral-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-neutral-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-neutral-900"></div>
-                              </label>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              // Collapsed Sources Drawer in Preview Mode
-              <div className="h-full flex flex-col items-center py-4 gap-3">
-                <button
-                  onClick={() => setIsSourcesDrawerOpen(true)}
-                  className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors"
-                  title="Open sources"
-                >
-                  <ChevronLeft className="w-4 h-4 text-neutral-600" />
-                </button>
-                {sources.map((source) => {
-                  const Icon = getSourceIcon(source.type);
-                  const isActive = sourcePreviewMode === source.id;
-                  return (
-                    <button
-                      key={source.id}
-                      onClick={() => switchPreviewSource(source.id)}
-                      className={cn(
-                        "w-12 h-12 flex items-center justify-center rounded-lg transition-colors relative",
-                        isActive 
-                          ? "bg-neutral-200 text-neutral-900" 
-                          : "hover:bg-neutral-100 text-neutral-600"
-                      )}
-                      title={`${source.name} - Click to preview`}
-                    >
-                      <Icon className="w-5 h-5" />
-                      {isActive && (
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-neutral-900 rounded-full"></div>
-                      )}
-                    </button>
-                  );
-                })}
-                <button
-                  className="w-12 h-12 flex items-center justify-center rounded-lg hover:bg-neutral-100 transition-colors border-2 border-dashed border-neutral-300 hover:border-neutral-400"
-                  title="Add source"
-                >
-                  <Plus className="w-4 h-4 text-neutral-500" />
-                </button>
-              </div>
-            )}
-          </div>
         </div>
+
+          {/* Source Preview Content - Floating with rounded corners */}
+          <div className="flex-1 flex flex-col">
+            {/* Floating Source Preview Container */}
+            <div className={cn(
+              "mt-4 mb-4 bg-white border border-neutral-200 rounded-lg flex-1 flex flex-col overflow-hidden",
+              isSourcesExpanded ? "w-[calc(100%-352px)]" : "w-[calc(100%-96px)]"
+            )}>
+              {/* Preview Header */}
+              <div className="px-4 pt-4 pb-4">
+                {/* Source Name with Exit Button */}
+                <div className="flex items-center gap-3 mb-4">
+                  {/* Exit Button */}
+                  <button
+                    onClick={exitSourcePreview}
+                    className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-neutral-100 transition-colors"
+                    title="Exit preview"
+                  >
+                    <X className="w-4 h-4 text-neutral-600" />
+                  </button>
+                  
+                  {/* Source Name */}
+                  <h1 className="text-base font-normal text-neutral-900" style={{ fontSize: '18px', fontWeight: 400 }}>
+                    {previewedSource.name}
+                  </h1>
+                </div>
+              </div>
+
+              {/* Preview Content */}
+              <div className="flex-1 overflow-hidden">
+                {previewedSource.type === 'link' ? (
+                  <iframe
+                    src={previewedSource.url}
+                    className="w-full h-full border-0"
+                    title={previewedSource.name}
+                  />
+                ) : (
+                  <div className="p-8 h-full flex items-center justify-center">
+                    <div className="text-center text-neutral-500">
+                      <FileText className="w-16 h-16 mx-auto mb-4 text-neutral-300" />
+                      <p className="text-lg mb-2">No preview available</p>
+                      <p className="text-sm">This source type doesn't support preview</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+
+          {/* Floating Sources Tabs in Preview Mode */}
+          <FloatingSourcesTabs
+            sources={sources}
+            selectedSources={selectedSources}
+            onSourceSelect={setActiveSourceId}
+            onSourceSelectionToggle={toggleSourceSelection}
+            onSelectAllSources={toggleSelectAllSources}
+            onAddSource={addNewSource}
+            onSourcePreview={switchPreviewSource}
+            onExpansionChange={setIsSourcesExpanded}
+            isExpanded={isSourcesExpanded}
+          />
+                    </div>
       )}
 
       {/* Normal Document Layout - Only render when NOT in preview mode */}
       {!sourcePreviewMode && (
-        <div className="h-full flex">
-          {/* Main Tools Content */}
-          <div className="flex-1 flex flex-col">
+        <div className="h-full flex bg-neutral-50">
+          {/* Main Tools Content - Floating with rounded corners */}
+          <div className="flex-1 flex flex-col transition-all duration-300">
+            {/* Floating Sources Tabs */}
+            <FloatingSourcesTabs
+              sources={sources}
+              selectedSources={selectedSources}
+              onSourceSelect={setActiveSourceId}
+              onSourceSelectionToggle={toggleSourceSelection}
+              onSelectAllSources={toggleSelectAllSources}
+              onAddSource={addNewSource}
+              onSourcePreview={enterSourcePreview}
+              onExpansionChange={setIsSourcesExpanded}
+              isExpanded={isSourcesExpanded}
+            />
+            
+            {/* Floating Main Content Container */}
+            <div className={cn(
+              "mt-4 mb-4 bg-white border border-neutral-200 rounded-lg flex-1 flex flex-col overflow-hidden relative",
+              isSourcesExpanded ? "w-[calc(100%-352px)]" : "w-[calc(100%-96px)]"
+            )}>
+              {/* Menu Button - Top Right */}
+              <button className="absolute top-4 right-4 w-8 h-8 flex items-center justify-center rounded-lg hover:bg-neutral-100 transition-colors z-10">
+                <MoreHorizontal className="w-5 h-5 text-neutral-600" />
+              </button>
+              
             {/* Document Header */}
             <div className="px-4 pt-4 pb-4">
-              <h1 className="text-base font-normal text-neutral-900 mb-4" style={{ fontSize: '18px', fontWeight: 400 }}>
-                {studySetName}
-              </h1>
+              <div className="mb-4">
+                <h1 className="text-base font-normal text-neutral-900" style={{ fontSize: '18px', fontWeight: 400 }}>
+                  {studySetName}
+                </h1>
+              </div>
               
               {/* Tool Tabs */}
               <div className="flex justify-center">
-                <div className="bg-neutral-100 rounded-full p-1 flex items-center gap-1">
+                <div className="bg-neutral-100 rounded-lg p-1 flex items-center gap-1">
                   {toolTabs.map((tab) => {
                     const Icon = tab.icon;
                     return (
@@ -1126,7 +1033,7 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                         key={tab.id}
                         onClick={() => setActiveToolTab(tab.id)}
                         className={cn(
-                          "flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all duration-200 rounded-full",
+                          "flex items-center gap-2 px-4 py-2 text-sm font-medium transition-all duration-200 rounded-lg",
                           activeToolTab === tab.id
                             ? "bg-white text-neutral-900 shadow-sm"
                             : "text-neutral-600 hover:text-neutral-900 hover:bg-white/50"
@@ -1179,22 +1086,22 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                         <div className="flex items-center justify-between">
                           {/* Left Side - Add Context */}
                           <div className="flex items-center gap-2">
-                            <button className="px-3 py-2 text-sm text-neutral-700 border border-neutral-200 rounded-full hover:bg-neutral-50 transition-colors">
+                            <button className="px-3 py-2 text-sm text-neutral-700 border border-neutral-200 rounded-lg hover:bg-neutral-50 transition-colors">
                               @ Add Context
                             </button>
                           </div>
                           
                           {/* Right Side - Action Buttons */}
                           <div className="flex items-center gap-2">
-                            <button className="p-2 text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors" title="Attach file">
+                            <button className="p-2 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors" title="Attach file">
                               <Paperclip className="w-4 h-4" />
                             </button>
-                            <button className="p-2 text-neutral-600 hover:bg-neutral-100 rounded-full transition-colors" title="Voice input">
+                            <button className="p-2 text-neutral-600 hover:bg-neutral-100 rounded-lg transition-colors" title="Voice input">
                               <Mic className="w-4 h-4" />
                             </button>
                             <button 
                               className={cn(
-                                "w-10 h-10 rounded-full flex items-center justify-center transition-colors",
+                                "w-10 h-10 rounded-lg flex items-center justify-center transition-colors",
                                 chatInput.trim() 
                                   ? "bg-neutral-900 text-white hover:bg-neutral-800 cursor-pointer" 
                                   : "bg-neutral-200 text-neutral-400 cursor-not-allowed"
@@ -1223,7 +1130,7 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                          <div className="mb-8 mt-12">
                           <div className="flex items-center justify-between mb-4">
                             <h2 className="text-base font-semibold text-neutral-900">My Decks</h2>
-                            <button className="px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
+                            <button className="px-4 py-2 border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
                               <Plus className="w-4 h-4" />
                               Generate Flashcards
                             </button>
@@ -1411,7 +1318,7 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                             <div className="mt-6 text-center">
                                                               <button 
                                   onClick={() => setIsCardFlipped(true)}
-                                  className="px-6 py-3 bg-neutral-900 text-white rounded-full hover:bg-neutral-800 transition-colors"
+                                className="px-6 py-3 bg-neutral-900 text-white rounded-lg hover:bg-neutral-800 transition-colors"
                                 >
                                   Show Answer
                                 </button>
@@ -1424,28 +1331,28 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                               <div className="flex justify-center gap-3">
                                 <button 
                                   onClick={() => handleCardRating('again')}
-                                  className="px-6 py-3 bg-red-50 text-red-600 rounded-full hover:bg-red-100 transition-colors border border-red-200"
+                                  className="px-6 py-3 bg-red-50 text-red-600 rounded-lg hover:bg-red-100 transition-colors border border-red-200"
                                 >
                                   <div className="text-sm font-medium">Again</div>
                                   <div className="text-xs">1 minute</div>
                                 </button>
                                 <button 
                                   onClick={() => handleCardRating('hard')}
-                                  className="px-6 py-3 bg-yellow-50 text-yellow-600 rounded-full hover:bg-yellow-100 transition-colors border border-yellow-200"
+                                  className="px-6 py-3 bg-yellow-50 text-yellow-600 rounded-lg hover:bg-yellow-100 transition-colors border border-yellow-200"
                                 >
                                   <div className="text-sm font-medium">Hard</div>
                                   <div className="text-xs">8 minutes</div>
                                 </button>
                                 <button 
                                   onClick={() => handleCardRating('good')}
-                                  className="px-6 py-3 bg-green-50 text-green-600 rounded-full hover:bg-green-100 transition-colors border border-green-200"
+                                  className="px-6 py-3 bg-green-50 text-green-600 rounded-lg hover:bg-green-100 transition-colors border border-green-200"
                                 >
                                   <div className="text-sm font-medium">Good</div>
                                   <div className="text-xs">15 minutes</div>
                                 </button>
                                 <button 
                                   onClick={() => handleCardRating('easy')}
-                                  className="px-6 py-3 bg-blue-50 text-blue-600 rounded-full hover:bg-blue-100 transition-colors border border-blue-200"
+                                  className="px-6 py-3 bg-blue-50 text-blue-600 rounded-lg hover:bg-blue-100 transition-colors border border-blue-200"
                                 >
                                   <div className="text-sm font-medium">Easy</div>
                                   <div className="text-xs">4 days</div>
@@ -1477,7 +1384,7 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                             <div className="mb-8 mt-12">
                               <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-base font-semibold text-neutral-900">My Summaries</h2>
-                                <button className="px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
+                                <button className="px-4 py-2 border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
                                   <Plus className="w-4 h-4" />
                                   Generate Summary
                                 </button>
@@ -1592,7 +1499,7 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                                     : 'Calculus: Fundamental Concepts and Applications...';
                                   navigator.clipboard.writeText(content);
                                 }}
-                                className="px-3 py-1.5 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2"
+                                className="px-3 py-1.5 border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2"
                               >
                                 <Copy className="w-4 h-4" />
                                 Copy Summary
@@ -1667,7 +1574,7 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                             <div className="mb-8 mt-12">
                               <div className="flex items-center justify-between mb-4">
                                 <h2 className="text-base font-semibold text-neutral-900">My Guides</h2>
-                                <button className="px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
+                                <button className="px-4 py-2 border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
                                   <Plus className="w-4 h-4" />
                                   Generate Guide
                                 </button>
@@ -1782,7 +1689,7 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                                     : 'Math Formulas: Essential Reference Guide...';
                                   navigator.clipboard.writeText(content);
                                 }}
-                                className="px-3 py-1.5 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2"
+                                className="px-3 py-1.5 border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2"
                               >
                                 <Copy className="w-4 h-4" />
                                 Copy Guide
@@ -1871,7 +1778,7 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                           <div className="mb-8 mt-12">
                            <div className="flex items-center justify-between mb-4">
                              <h2 className="text-base font-semibold text-neutral-900">My Quizzes</h2>
-                             <button className="px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
+                             <button className="px-4 py-2 border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center gap-2">
                                <Plus className="w-4 h-4" />
                                Generate Quiz
                              </button>
@@ -2074,7 +1981,7 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                                              )}
                                            >
                                              <span className="font-medium text-neutral-700 mr-3">{key.toUpperCase()}.</span>
-                                             <span className="text-neutral-900">{value}</span>
+                                             <span className="text-neutral-900">{value as string}</span>
                                            </button>
                                          );
                                       })}
@@ -2206,7 +2113,7 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                                onClick={handleQuizBack}
                                disabled={currentQuizIndex === 0}
                                className={cn(
-                                 "px-6 py-3 rounded-full transition-colors",
+                                 "px-6 py-3 rounded-lg transition-colors",
                                  currentQuizIndex === 0
                                    ? "bg-neutral-100 text-neutral-400 cursor-not-allowed"
                                    : "bg-neutral-200 text-neutral-700 hover:bg-neutral-300"
@@ -2219,7 +2126,7 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                               <button 
                                 onClick={showQuizAnswer ? handleQuizNext : handleQuizAnswer}
                                 className={cn(
-                                  "px-6 py-3 rounded-full transition-colors",
+                                  "px-6 py-3 rounded-lg transition-colors",
                                   showQuizAnswer
                                     ? "bg-neutral-900 text-white hover:bg-neutral-800"
                                     : "bg-neutral-900 text-white hover:bg-neutral-800"
@@ -2236,7 +2143,7 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
 
                                    {!['ai-chat', 'summary', 'study-guide', 'flashcards', 'quizzes', 'notes'].includes(activeToolTab) && (
                    <div className="min-h-[calc(100vh-300px)] flex flex-col items-center justify-center text-center">
-                     <div className="w-20 h-20 bg-neutral-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                     <div className="w-20 h-20 bg-neutral-100 rounded-lg flex items-center justify-center mx-auto mb-6">
                        {React.createElement(toolTabs.find(tab => tab.id === activeToolTab)?.icon || FileText, {
                          className: "w-10 h-10 text-neutral-400"
                        })}
@@ -2245,7 +2152,7 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
                        {toolTabs.find(tab => tab.id === activeToolTab)?.label}
                      </h2>
                      <p className="text-neutral-600 mb-8">Coming soon</p>
-                     <button className="px-6 py-3 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors">
+                     <button className="px-6 py-3 border border-neutral-200 rounded-lg text-neutral-700 hover:bg-neutral-50 transition-colors">
                        Get Notified
                      </button>
                    </div>
@@ -2253,149 +2160,9 @@ const DocumentPage: React.FC<DocumentPageProps> = ({
               </div>
             </div>
           </div>
+                </div>
+                
 
-                            {/* Sources Drawer */}
-                  <div className={cn(
-                    "bg-white border-l border-neutral-200 transition-all duration-300",
-                    isSourcesDrawerOpen ? "w-80" : "w-16"
-                  )}>
-            {isSourcesDrawerOpen ? (
-              // Expanded Sources Drawer
-              <div className="h-full flex flex-col">
-                {/* Header Section */}
-                <div className="flex items-center justify-between p-4">
-                  <h2 className="text-base font-semibold text-neutral-900">My Sources</h2>
-                  <button
-                    onClick={() => setIsSourcesDrawerOpen(false)}
-                    className="w-8 h-8 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors"
-                  >
-                    <ChevronRight className="w-4 h-4 text-neutral-600" />
-                  </button>
-                </div>
-                
-                {/* Add Source Button */}
-                <div className="px-4 mb-4">
-                  <button className="w-full px-4 py-2 border border-neutral-200 rounded-full text-neutral-700 hover:bg-neutral-50 transition-colors text-sm flex items-center justify-center gap-2">
-                    <Plus className="w-4 h-4" />
-                    Add Source
-                  </button>
-                </div>
-                
-                {/* Sources List */}
-                <div className="flex-1 px-4 overflow-y-auto">
-                  <div className="space-y-4">
-                    {/* Select All Toggle */}
-                    <div className="flex items-center gap-3 mb-4">
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input
-                          type="checkbox"
-                          id="select-all"
-                          checked={isAllSourcesSelected}
-                          onChange={toggleSelectAllSources}
-                          className="sr-only peer"
-                        />
-                        <div className="w-9 h-5 bg-neutral-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-neutral-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-neutral-900"></div>
-                      </label>
-                      <span className="text-xs text-neutral-600">Select All Sources</span>
-                    </div>
-                    
-                    {/* Source Cards */}
-                    {sources.map((source) => {
-                      const Icon = getSourceIcon(source.type);
-                      return (
-                        <div 
-                          key={source.id}
-                          onClick={() => enterSourcePreview(source.id)}
-                          className="bg-white border border-neutral-200 rounded-lg p-4 hover:bg-neutral-50 transition-colors cursor-pointer group"
-                        >
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                              {/* Source Type Icon - Replaced by Options Menu on Hover */}
-                              <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0 relative">
-                                <Icon className="w-5 h-5 text-neutral-600 transition-opacity duration-200 group-hover:opacity-0" />
-                                <button
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    // Show source options menu here
-                                  }}
-                                  className="absolute inset-0 w-full h-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-200"
-                                  title="Source options"
-                                >
-                                  <MoreHorizontal className="w-5 h-5 text-neutral-600" />
-                                </button>
-                              </div>
-                              <div>
-                                <h3 className="font-medium text-neutral-900">{source.name}</h3>
-                                <p className="text-sm text-neutral-500">{source.type}</p>
-                              </div>
-                            </div>
-                            
-                            {/* Action Buttons */}
-                            <div className="flex items-center gap-2">
-                              {/* Toggle Selection */}
-                              <label className="relative inline-flex items-center cursor-pointer">
-                                <input
-                                  type="checkbox"
-                                  id={`source-${source.id}`}
-                                  checked={selectedSources.includes(source.id)}
-                                  onChange={(e) => {
-                                    e.stopPropagation();
-                                    toggleSourceSelection(source.id);
-                                  }}
-                                  onClick={(e) => e.stopPropagation()}
-                                  className="sr-only peer"
-                                />
-                                <div className="w-9 h-5 bg-neutral-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-neutral-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-neutral-900"></div>
-                              </label>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-            ) : (
-              // Collapsed Sources Drawer
-              <div className="h-full flex flex-col items-center py-4 gap-3">
-                <button
-                  onClick={() => setIsSourcesDrawerOpen(true)}
-                  className="w-12 h-12 flex items-center justify-center rounded-full hover:bg-neutral-100 transition-colors"
-                  title="Open sources"
-                >
-                  <ChevronLeft className="w-4 h-4 text-neutral-600" />
-                </button>
-                {sources.map((source) => {
-                  const Icon = getSourceIcon(source.type);
-                  const isSelected = selectedSources.includes(source.id);
-                  return (
-                    <button
-                      key={source.id}
-                      onClick={() => enterSourcePreview(source.id)}
-                      className={cn(
-                        "w-12 h-12 flex items-center justify-center rounded-lg transition-colors relative",
-                        isSelected 
-                          ? "bg-neutral-200 text-neutral-900" 
-                          : "hover:bg-neutral-100 text-neutral-600"
-                      )}
-                      title={`${source.name} - Click to preview`}
-                    >
-                      <Icon className="w-5 h-5" />
-                      {isSelected && (
-                        <div className="absolute -top-1 -right-1 w-3 h-3 bg-neutral-900 rounded-full"></div>
-                      )}
-                    </button>
-                  );
-                })}
-                <button
-                  className="w-12 h-12 flex items-center justify-center rounded-lg hover:bg-neutral-100 transition-colors border-2 border-dashed border-neutral-300 hover:border-neutral-400"
-                  title="Add source"
-                >
-                  <Plus className="w-4 h-4 text-neutral-500" />
-                </button>
-              </div>
-            )}
-          </div>
         </div>
       )}
 

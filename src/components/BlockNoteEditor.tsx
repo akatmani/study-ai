@@ -2,6 +2,7 @@ import React from 'react';
 import { useCreateBlockNote } from '@blocknote/react';
 import { BlockNoteView } from '@blocknote/mantine';
 import { Link } from 'lucide-react';
+import { Button } from '@/components/ui';
 import '@blocknote/core/fonts/inter.css';
 import '@blocknote/core/style.css';
 import '@blocknote/mantine/style.css';
@@ -41,21 +42,23 @@ const BlockNoteEditor: React.FC<BlockNoteEditorProps> = ({
       {/* Note Header */}
       <div className="flex items-center justify-between mb-6 px-4">
         {onBack && (
-          <button
+          <Button
+            variant="ghost"
             onClick={onBack}
-            className="text-neutral-600 hover:text-neutral-900 transition-colors flex items-center gap-2"
+            className="flex items-center gap-2"
           >
             ← Back
-          </button>
+          </Button>
         )}
         {onConvertToSource && (
-          <button
+          <Button
+            variant="outline"
+            size="md"
             onClick={onConvertToSource}
-            className="px-4 py-2 bg-white border border-neutral-200 text-neutral-700 rounded-full hover:bg-neutral-50 hover:border-neutral-300 transition-colors text-sm flex items-center gap-2"
           >
             <Link className="w-4 h-4" />
             Convert to Source
-          </button>
+          </Button>
         )}
       </div>
       
