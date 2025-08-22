@@ -26,6 +26,10 @@ interface Note {
 interface NotesEditorProps {
   initialContent?: any;
   onChange?: (blocks: any) => void;
+  hideHeader?: boolean;
+  onEditingStateChange?: (isEditing: boolean) => void;
+  createTrigger?: number;
+  showBackButton?: boolean;
 }
 
 const NotesEditor: React.FC<NotesEditorProps> = (props) => {
@@ -50,6 +54,7 @@ const NotesEditor: React.FC<NotesEditorProps> = (props) => {
   const handleNoteSelect = (note: Note) => {
     setSelectedNote(note);
     setIsEditingNote(true);
+    props.onEditingStateChange?.(true);
   };
 
   const handleNoteCreate = () => {
@@ -62,13 +67,33 @@ const NotesEditor: React.FC<NotesEditorProps> = (props) => {
     setNotes(prev => [newNote, ...prev]);
     setSelectedNote(newNote);
     setIsEditingNote(true);
+    props.onEditingStateChange?.(true);
   };
+
+  // Listen for create trigger from parent
+  React.useEffect(() => {
+    if (props.createTrigger && props.createTrigger > 0) {
+      handleNoteCreate();
+    }
+  }, [props.createTrigger]);
+
+  // Sync internal state with parent state
+  React.useEffect(() => {
+    if (!props.onEditingStateChange) return;
+    
+    // If parent says we're not editing but we think we are, reset our state
+    if (!props.onEditingStateChange && isEditingNote) {
+      setSelectedNote(null);
+      setIsEditingNote(false);
+    }
+  }, [props.onEditingStateChange, isEditingNote]);
 
   const handleNoteDelete = (noteId: string) => {
     setNotes(prev => prev.filter(note => note.id !== noteId));
     if (selectedNote?.id === noteId) {
       setSelectedNote(null);
       setIsEditingNote(false);
+      props.onEditingStateChange?.(false);
     }
   };
 
@@ -90,6 +115,7 @@ const NotesEditor: React.FC<NotesEditorProps> = (props) => {
   const handleBackToList = () => {
     setSelectedNote(null);
     setIsEditingNote(false);
+    props.onEditingStateChange?.(false);
   };
 
   if (isEditingNote && selectedNote) {
@@ -100,7 +126,7 @@ const NotesEditor: React.FC<NotesEditorProps> = (props) => {
           onChange={handleNoteChange}
           noteName={selectedNote.title}
           onConvertToSource={() => handleNoteConvertToSource(selectedNote)}
-          onBack={handleBackToList}
+          onBack={props.showBackButton !== false ? handleBackToList : undefined}
         />
       </div>
     );
@@ -113,6 +139,7 @@ const NotesEditor: React.FC<NotesEditorProps> = (props) => {
       onNoteCreate={handleNoteCreate}
       onNoteDelete={handleNoteDelete}
       onNoteConvertToSource={handleNoteConvertToSource}
+      hideHeader={props.hideHeader}
     />
   );
 };

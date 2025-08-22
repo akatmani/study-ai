@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Layers, 
   Plus, 
@@ -10,6 +10,7 @@ import {
   Volume2
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { Card } from '@/components/ui';
 
 interface Source {
   id: string;
@@ -42,7 +43,26 @@ const FloatingSourcesTabs: React.FC<FloatingSourcesTabsProps> = ({
   onExpansionChange,
   isExpanded = false
 }) => {
-  const [isAllSourcesSelected, setIsAllSourcesSelected] = useState(false);
+  const [isAllSourcesSelected, setIsAllSourcesSelected] = useState(true);
+
+  // Select all sources by default when component mounts
+  useEffect(() => {
+    if (sources.length > 0) {
+      sources.forEach(source => {
+        if (!selectedSources.includes(source.id)) {
+          onSourceSelect(source.id);
+        }
+      });
+    }
+  }, [sources, onSourceSelect]);
+
+  // Sync isAllSourcesSelected with actual selection state
+  useEffect(() => {
+    if (sources.length > 0) {
+      const allSelected = sources.every(source => selectedSources.includes(source.id));
+      setIsAllSourcesSelected(allSelected);
+    }
+  }, [sources, selectedSources]);
 
   const getSourceIcon = (type: string) => {
     switch (type) {
@@ -54,8 +74,21 @@ const FloatingSourcesTabs: React.FC<FloatingSourcesTabsProps> = ({
   };
 
   const handleSelectAllToggle = () => {
-    setIsAllSourcesSelected(!isAllSourcesSelected);
-    onSelectAllSources();
+    const newState = !isAllSourcesSelected;
+    setIsAllSourcesSelected(newState);
+    if (newState) {
+      // Select all sources
+      sources.forEach(source => {
+        if (!selectedSources.includes(source.id)) {
+          onSourceSelect(source.id);
+        }
+      });
+    } else {
+      // Deselect all sources
+      selectedSources.forEach(sourceId => {
+        onSourceSelectionToggle(sourceId);
+      });
+    }
   };
 
   const handleExpansionChange = (expanded: boolean) => {
@@ -77,7 +110,7 @@ const FloatingSourcesTabs: React.FC<FloatingSourcesTabsProps> = ({
               <h3 className="text-sm font-semibold text-neutral-900">Sources</h3>
               <button
                 onClick={() => handleExpansionChange(false)}
-                className="w-6 h-6 flex items-center justify-center rounded-lg hover:bg-neutral-100 transition-colors"
+                className="w-8 h-8 flex items-center justify-center rounded-lg hover:bg-neutral-100 transition-colors"
                 title="Collapse"
               >
                 <ChevronRight className="w-4 h-4 text-neutral-600" />
@@ -94,62 +127,64 @@ const FloatingSourcesTabs: React.FC<FloatingSourcesTabsProps> = ({
             </button>
 
             {/* Select All Toggle */}
-            <div className="flex items-center gap-3 mb-4">
+            <div className="flex items-center justify-between mb-4">
+              <span className="text-xs text-neutral-600">Select All</span>
               <label className="relative inline-flex items-center cursor-pointer">
                 <input
                   type="checkbox"
                   checked={isAllSourcesSelected}
                   onChange={handleSelectAllToggle}
-                  className="sr-only peer"
+                  className="w-4 h-4 bg-white border border-neutral-300 rounded focus:ring-2 focus:ring-neutral-500 focus:ring-offset-0"
+                  style={{
+                    accentColor: '#171717'
+                  }}
                 />
-                <div className="w-7 h-4 bg-neutral-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-neutral-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-3 after:w-3 after:transition-all peer-checked:bg-neutral-900"></div>
               </label>
-              <span className="text-xs text-neutral-600">Select All</span>
             </div>
 
             {/* Sources List - takes remaining height */}
-            <div className="flex-1 space-y-2 overflow-y-auto">
+            <div className="flex-1 space-y-3 overflow-y-auto">
               {sources.map((source) => {
                 const Icon = getSourceIcon(source.type);
                 const isSelected = selectedSources.includes(source.id);
                 return (
-                  <div 
+                  <Card
                     key={source.id}
-                    className="flex items-center justify-between p-2 hover:bg-neutral-50 rounded-lg transition-colors cursor-pointer group"
+                    variant="default"
+                    className="p-4 hover:bg-neutral-50 transition-colors cursor-pointer group"
                     onClick={() => onSourcePreview(source.id)}
                   >
-                    <div className="flex items-center gap-2">
-                      {/* Source Icon */}
-                      <div className="w-8 h-8 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-4 h-4 text-neutral-600" />
-                      </div>
-                      
-                      {/* Source Info */}
-                      <div className="min-w-0">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        {/* Source Icon */}
+                        <div className="w-10 h-10 bg-neutral-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                          <Icon className="w-5 h-5 text-neutral-600" />
+                        </div>
+                        
+                        {/* Source Name */}
                         <h4 className="text-sm font-medium text-neutral-900 truncate">
                           {source.name}
                         </h4>
-                        <p className="text-xs text-neutral-500 capitalize">
-                          {source.type}
-                        </p>
                       </div>
-                    </div>
 
-                    {/* Selection Toggle */}
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={(e) => {
-                          e.stopPropagation();
-                          onSourceSelectionToggle(source.id);
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                        className="sr-only peer"
-                      />
-                      <div className="w-6 h-3 bg-neutral-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-neutral-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-neutral-300 after:border after:rounded-full after:h-2 after:w-2 after:transition-all peer-checked:bg-neutral-900"></div>
-                    </label>
-                  </div>
+                      {/* Selection Toggle */}
+                      <label className="relative inline-flex items-center cursor-pointer">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={(e) => {
+                            e.stopPropagation();
+                            onSourceSelectionToggle(source.id);
+                          }}
+                          onClick={(e) => e.stopPropagation()}
+                          className="w-4 h-4 bg-white border border-neutral-300 rounded focus:ring-2 focus:ring-neutral-500 focus:ring-offset-0"
+                          style={{
+                            accentColor: '#171717'
+                          }}
+                        />
+                      </label>
+                    </div>
+                  </Card>
                 );
               })}
             </div>
@@ -166,40 +201,31 @@ const FloatingSourcesTabs: React.FC<FloatingSourcesTabsProps> = ({
               <ChevronLeft className="w-5 h-5 text-neutral-600" />
             </button>
 
+            {/* Add Source Button - below expand button */}
+            <button
+              onClick={onAddSource}
+              className="w-12 h-12 flex items-center justify-center rounded-lg hover:bg-neutral-100 transition-colors bg-white border border-neutral-200 shadow-sm text-neutral-700 hover:bg-neutral-50 mb-2"
+              title="Add source"
+            >
+              <Plus className="w-4 h-4" />
+            </button>
+
             {/* Sources Icons - takes remaining height */}
             <div className="flex-1 space-y-2">
               {sources.map((source) => {
                 const Icon = getSourceIcon(source.type);
-                const isSelected = selectedSources.includes(source.id);
                 return (
                   <button
                     key={source.id}
                     onClick={() => onSourcePreview(source.id)}
-                    className={cn(
-                      "w-12 h-12 flex items-center justify-center rounded-lg transition-colors relative",
-                      isSelected 
-                        ? "bg-neutral-200 text-neutral-900" 
-                        : "hover:bg-neutral-100 text-neutral-600"
-                    )}
+                    className="w-12 h-12 flex items-center justify-center rounded-lg hover:bg-neutral-100 text-neutral-600 transition-colors bg-neutral-100 border border-neutral-200"
                     title={`${source.name} - Click to preview`}
                   >
-                    <Icon className="w-5 h-5" />
-                    {isSelected && (
-                      <div className="absolute -top-1 -right-1 w-3 h-3 bg-neutral-900 rounded-full"></div>
-                    )}
+                    <Icon className="w-5 h-5 text-neutral-600" />
                   </button>
                 );
               })}
             </div>
-
-            {/* Add Source Button - at bottom */}
-            <button
-              onClick={onAddSource}
-              className="w-12 h-12 flex items-center justify-center rounded-lg hover:bg-neutral-100 transition-colors border-2 border-dashed border-neutral-300 hover:border-neutral-400 mt-auto"
-              title="Add source"
-            >
-              <Plus className="w-4 h-4 text-neutral-500" />
-            </button>
           </div>
         )}
       </div>

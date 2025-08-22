@@ -33,7 +33,7 @@ const MainContent: React.FC<MainContentProps> = ({ isSidebarCollapsed = false })
       {/* Floating Main Content Container */}
       <div className="mt-4 mb-4 mr-4 bg-white border border-neutral-200 rounded-lg flex flex-col" style={{ height: 'calc(100vh - 32px)' }}>
         <div className="flex-1 flex items-center justify-center">
-          <div className="w-full max-w-4xl px-8">
+          <div className="w-full px-8" style={{ maxWidth: '864px' }}>
           {/* Main heading */}
           <div className="text-center mb-12">
             <h1 className="text-3xl font-semibold text-neutral-900 mb-3">
